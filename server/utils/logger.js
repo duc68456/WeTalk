@@ -10,7 +10,14 @@ const error = (...params) => {
   }
 }
 
+const table = (...params) => {
+  if (process.env.NODE_ENV !== 'test') {
+    console.table(...params)
+  }
+}
+
 export default {
   info,
-  error
+  error,
+  table
 }
