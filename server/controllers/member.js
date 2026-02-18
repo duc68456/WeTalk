@@ -1,8 +1,14 @@
 import express from 'express'
+import zod from 'zod'
+
 import prisma from '../config/db.js'
 import logger from '../utils/logger.js'
 
 const router = express.Router()
+
+const updateMemberSchema = zod.object({
+  roleId: zod.coerce.number().int({ message: "roleId must be Integer" })
+})
 
 router.get('/', async (req, res, next) => {
   try {
@@ -77,6 +83,98 @@ router.post('/', async (req, res, next) => {
     res.status(201).json({
       message: "Member added succesfully",
       member: memberAdded
+    })
+  }
+  catch (error) {
+    logger.error(error)
+    next(error)
+  }
+})
+
+router.delete('/', async (req, res, next) => {
+  try {
+    const { userId, conversationId } = req.query
+
+    const requesterId = req.user.userId;
+
+    if (userId !== requesterId) {
+      const requesterMember = await prisma.member.findUnique({
+        where: {
+          userId_conversationId: {
+            userId: requesterId,
+            conversationId: conversationId
+          }
+        },
+        include: { role: true }
+      });
+
+      if (!requesterMember || (requesterMember.roleId !== 2)) {
+        return res.status(403).json({ 
+          message: "You are not permitted to delete this member" 
+        });
+      }
+    }
+
+    const memberDeleted = await prisma.member.delete({
+      where: {
+        userId_conversationId: {
+          userId: userId,
+          conversationId: conversationId
+        }
+      }
+    })
+
+    return res.status(200).json({
+      message: "Member deleted succesfully",
+      member: memberDeleted
+    })
+  }
+  catch (error) {
+    logger.error(error)
+    next(error)
+  }
+})
+
+router.put('/', async (req, res, next) => {
+  try {
+    const { userId, conversationId } = req.query
+
+    const validatedData = updateMemberSchema.parse(req.body)
+
+    const { roleId } = validatedData
+    const requesterId = req.user.userId;
+
+    const requesterMember = await prisma.member.findUnique({
+      where: {
+        userId_conversationId: {
+          userId: requesterId,
+          conversationId: conversationId
+        }
+      },
+      include: { role: true }
+    });
+
+    if (!requesterMember || (requesterMember.roleId !== 2)) {
+      return res.status(403).json({ 
+        message: "You are not permitted to edit the role of this member" 
+      });
+    }
+
+    const editedMember = await prisma.member.update({
+      where: {
+        userId_conversationId: {
+          userId: userId,
+          conversationId: conversationId
+        }
+      },
+      data: {
+        roleId: roleId
+      }
+    })
+
+    return res.status(200).json({
+      message: "Member's role editted succesfully",
+      member: editedMember
     })
   }
   catch (error) {

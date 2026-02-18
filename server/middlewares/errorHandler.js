@@ -15,6 +15,13 @@ const errorHandler = (err, req, res, next) => {
       message: `This ${field} is already exist`
     })
   }
+  else if(err.code === 'P2025') {
+    // const field = err.meta.target[0]
+    const field = err.meta.modelName
+    res.status(409).json({
+      message: `${field} was not found for delete`
+    })
+  }
   else {
     res.status(500).json({
       message: 'the error cannot be idenify'

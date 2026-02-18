@@ -15,6 +15,80 @@ const conversationSchema = zod.object({
 
 const router = express.Router();
 
+router.get('/myConversation', async (req, res, next) => {
+  try {
+    logger.info('req arrived my')
+    logger.info('req user: ', req.user)
+    const userId = req.user.userId
+
+    const isUserExist = await prisma.user.findUnique({
+      where: {
+        id: userId
+      }
+    })
+
+    if (!isUserExist) {
+      return res.status(400).json({
+        message: "User is not exist"
+      })
+    }
+
+    const memberRecords = await prisma.member.findMany({
+      where: {
+        userId: userId
+      },
+      include: {
+        conversation: true
+      }
+    })
+    logger.info(memberRecords)
+    res.json(memberRecords)
+  }
+  catch (error) {
+    logger.error(error)
+    next(error)
+  }
+})
+
+router.get('/:conversationId', async (req, res, next) => {
+  try {
+    const { conversationId } = req.params
+
+    const requesterId = req.user.userId
+
+    const isInConversation = await prisma.member.findUnique({
+      where: {
+        userId_conversationId: {
+          userId: requesterId,
+          conversationId: conversationId
+        }
+      }}
+    )
+
+    if (!isInConversation) {
+      return res.status(403).json({
+        message: "You are not permitted to view this conversation"
+      })
+    }
+
+    const queriedConversation = await prisma.conversation.findUnique({
+      where: {
+        id: conversationId
+      },
+      include: { members: true }
+    })
+
+    return res.status(200).json({
+      message: "Query conversation succesfully",
+      conversation: queriedConversation
+    })
+  }
+  catch (error) {
+    logger.error(error)
+    next(error)
+  }
+})
+
 router.get('/', async (req, res, next) => {
   // logger.info('req: ', req.body)
   const { conversationId } = req.body

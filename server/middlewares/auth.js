@@ -7,6 +7,10 @@ const auth = async (req, res, next) => {
   const authHeader = req.header('Authorization');
   // logger.info(authHeader)
 
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: "Token missing or invalid format" });
+  }
+
   const token = authHeader.replace('Bearer ', '');
   // logger.info(token)
   if (!token) {
@@ -21,6 +25,7 @@ const auth = async (req, res, next) => {
     next();
   }
   catch (error) {
+    logger.error('logger from middleware auth: ', error)
     next(error);
   }
 }
