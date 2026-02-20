@@ -56,32 +56,61 @@ router.get('/:conversationId', async (req, res, next) => {
 
     const requesterId = req.user.userId
 
-    const isInConversation = await prisma.member.findUnique({
+    const conversation = await prisma.conversation.findFirst({
       where: {
-        userId_conversationId: {
-          userId: requesterId,
-          conversationId: conversationId
+        id: conversationId,
+        members: {
+          some: { userId: requesterId }
         }
-      }}
-    )
+      },
+      include: {
+        members: {
+          include: {
+            user: true,
+            role: true
+          }
+        }
+      }
+    })
 
-    if (!isInConversation) {
-      return res.status(403).json({
-        message: "You are not permitted to view this conversation"
+    // logger.info(conversation)
+
+    if (!conversation) {
+      return res.status(404).json({
+        message: "Conversation not found or you do not have permission"
       })
     }
-
-    const queriedConversation = await prisma.conversation.findUnique({
-      where: {
-        id: conversationId
-      },
-      include: { members: true }
-    })
-
+    
     return res.status(200).json({
-      message: "Query conversation succesfully",
-      conversation: queriedConversation
+      message: "Query conversation successfully",
+      conversation: conversation
     })
+
+    // const isInConversation = await prisma.member.findUnique({
+    //   where: {
+    //     userId_conversationId: {
+    //       userId: requesterId,
+    //       conversationId: conversationId
+    //     }
+    //   }})
+
+    // if (!isInConversation) {
+    //   return res.status(403).json({
+    //     message: "You are not permitted to view this conversation"
+    //   })
+    // }
+
+    // const queriedConversation = await prisma.conversation.findUnique({
+    //   where: {
+    //     id: conversationId
+    //   },
+    //   include: { members: true }
+    // })
+
+    // return res.status(200).json({
+    //   message: "Query conversation succesfully",
+    //   conversation: queriedConversation
+    // })
   }
   catch (error) {
     logger.error(error)
