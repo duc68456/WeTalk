@@ -3,12 +3,16 @@ import zod from 'zod'
 import logger from '../utils/logger.js'
 
 const errorHandler = (err, req, res, next) => {
+  logger.error(err)
   if (err.message === 'DIRECT_MIN_MEMBER') {
     return res.status(400).json({ message: "DIRECT chat can only have 2 participant" });
   }
   if (err.message === 'GROUP_MIN_MEMBER') {
-    // logger.error('yeah it fall this')
     return res.status(422).json({ message: "Group must have at least 3 members" })
+  }
+
+  if (err.message === 'USER_NOT_FOUND') {
+    return res.status(404).json({ message: "User not found" })
   }
   if (err instanceof zod.ZodError) {
     const paths = err.issues.map(e => e.path)

@@ -1,7 +1,6 @@
 import express from 'express'
 import zod from 'zod'
 
-import prisma from '../config/db.js'
 import logger from '../utils/logger.js'
 
 import conversationService from '../services/conversation.js'
