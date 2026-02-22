@@ -1,5 +1,7 @@
 import prisma from '../config/db.js'
 
+import bcrypt from 'bcryptjs'
+
 const getUserById = async (userId) => {
   const user = await prisma.user.findUnique({
     where: {

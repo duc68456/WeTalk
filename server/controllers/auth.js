@@ -1,12 +1,11 @@
 import express from 'express'
-import bcrypt from 'bcryptjs'
 import zod from 'zod'
-import jwt from 'jsonwebtoken'
-import prisma from '../config/db.js'
+
 import logger from '../utils/logger.js'
-import config from '../utils/config.js'
 
 const router = express.Router();
+
+import authService from '../services/auth.js'
 
 const registerSchema = zod.object({
   email: zod.string().email("Email is invalid"),
@@ -25,18 +24,8 @@ router.post('/register', async (req, res, next) => {
 
     const { email, password, name } = validatedData;
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const newUser = await prisma.user.create({
-      data: {
-        email: email,
-        password: hashedPassword,
-        name: name
-      }
-    });
-
-    // logger.info(newUser)
+    // const newUser = await userService.createUser(email, password, name)
+    const newUser = await authService.register(email, password, name)
 
     res.status(201).json({
       message: "Registered Succesfully",
@@ -48,12 +37,6 @@ router.post('/register', async (req, res, next) => {
     });
   }
   catch (error) {
-    // if (error instanceof zod.ZodError) {
-    //   logger.info('This is the object error: ', error)
-    //   logger.info('This is the array errors: ', error.issues)
-    //   const errorMessages = error.issues.map((err) => err.message);
-    //   logger.error(errorMessages).join(', ')
-    // }
     next(error);
   }
 })
@@ -64,31 +47,13 @@ router.post('/login', async (req, res, next) => {
 
     const { email, password } = validatedData;
 
-    const user = await prisma.user.findUnique({
-      where: { email: email }
-    });
+    const result = await authService.login(email, password)
 
-    if(!user) {
-      return res.status(401).json('Email is not registered');
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json('Password is invalid');
-    }
-
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email
-      },
-      config.JWT_SECRET
-    );
+    const user = result.user
 
     res.status(200).json({
       message: 'Login succesfully',
-      token: token,
+      token: result.token,
       user: {
         id: user.id,
         name: user.name,
@@ -97,8 +62,6 @@ router.post('/login', async (req, res, next) => {
     });
   }
   catch (error) {
-    logger.error('encountered error');
-    logger.error('This is the error: ', error);
     next(error);
   }
 })

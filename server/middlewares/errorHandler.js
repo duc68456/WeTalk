@@ -26,6 +26,10 @@ const errorHandler = (err, req, res, next) => {
     return res.status(401).json({ message: "You are not permitted to perform this action" })
   }
 
+  else if (err.message === 'INVALID_LOGIN_INFO') {
+    return res.status(401).json({ message: "Invalid email or password" })
+  }
+
   else if (err instanceof zod.ZodError) {
     const paths = err.issues.map(e => e.path)
     const messages = err.issues.map(e => e.message)
