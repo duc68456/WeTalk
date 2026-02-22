@@ -75,7 +75,7 @@ router.post('/', async (req, res, next) => {
       data: {
         user: { connect: { id: userId } },
         conversation: { connect: { id: conversationId } },
-        role: { connect: { id: 3 } }
+        role: 'MEMBER'
       }
     })
     logger.info('member added: ', memberAdded)
@@ -141,7 +141,7 @@ router.put('/', async (req, res, next) => {
 
     const validatedData = updateMemberSchema.parse(req.body)
 
-    const { roleId } = validatedData
+    const { role } = validatedData
     const requesterId = req.user.userId;
 
     const requesterMember = await prisma.member.findUnique({
@@ -154,7 +154,7 @@ router.put('/', async (req, res, next) => {
       include: { role: true }
     });
 
-    if (!requesterMember || (requesterMember.roleId !== 2)) {
+    if (!requesterMember || (requesterMember.role !== 'ADMIN')) {
       return res.status(403).json({ 
         message: "You are not permitted to edit the role of this member" 
       });
@@ -168,7 +168,7 @@ router.put('/', async (req, res, next) => {
         }
       },
       data: {
-        roleId: roleId
+        role: role
       }
     })
 

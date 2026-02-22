@@ -3,7 +3,7 @@ import config from '../utils/config.js'
 import logger from '../utils/logger.js'
 
 const auth = async (req, res, next) => {
-  // logger.info('req arrived')
+  // logger.info('req arrived auth middleware')
   const authHeader = req.header('Authorization');
   // logger.info(authHeader)
 
@@ -12,7 +12,7 @@ const auth = async (req, res, next) => {
   }
 
   const token = authHeader.replace('Bearer ', '');
-  // logger.info(token)
+  // logger.info('token: ', token)
   if (!token) {
     return res.status(401).json({ message: "Token missing" });
   }
@@ -25,7 +25,7 @@ const auth = async (req, res, next) => {
     next();
   }
   catch (error) {
-    logger.error('logger from middleware auth: ', error)
+    logger.error('error from middleware auth: ', error)
     next(error);
   }
 }

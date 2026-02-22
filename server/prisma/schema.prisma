@@ -13,6 +13,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum RoleName {
+  PEER
+  ADMIN
+  MEMBER
+}
+
 model User {
   id String @id @default(uuid())
   email String @unique
@@ -47,21 +53,10 @@ model Member {
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id])
 
-  roleId         Int
-  role           Role @relation(fields: [roleId], references: [id])
+  role           RoleName @default(MEMBER)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@id([userId, conversationId])
-}
-
-model Role {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
-  
-  members Member[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
