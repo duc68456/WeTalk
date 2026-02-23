@@ -1,4 +1,6 @@
 import express from 'express'
+import { createServer } from 'node:http'
+import { Server } from 'socket.io'
 
 import authController from './controllers/auth.js'
 import conversationController from './controllers/conversation.js'
@@ -10,7 +12,30 @@ import messageController from './controllers/message.js'
 import authMiddleware from './middlewares/auth.js'
 import errorHandler from './middlewares/errorHandler.js'
 
+import logger from './utils/logger.js'
+
 const app = express()
+const server = createServer(app)
+const io = new Server(server)
+
+app.set('io', io)
+
+io.on('connection', (socket) => {
+  logger.info('A User has connected, they connect id is:', socket.id)
+
+  socket.on('disconnect', () => {
+    logger.info('User with id', socket.id, 'has disconnected')
+  })
+
+  socket.on('join_room', (conversationId) => {
+    socket.join(conversationId)
+    logger.info('User with id', socket.id, 'has joined room', conversationId)
+  })
+
+  // socket.on('new_message', (newMessage) => {
+  //   logger.info('User with id', socket.id, 'has received message: ', newMessage)
+  // })
+})
 
 app.use(express.json())
 
@@ -23,4 +48,4 @@ app.use('/api/message', authMiddleware, messageController)
 
 app.use(errorHandler)
 
-export default app
+export default server

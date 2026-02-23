@@ -11,7 +11,11 @@ router.post('/', async (req, res, next) => {
     const { conversationId, content } = req.body
     const senderId = req.user.userId
 
+    const io = req.app.get('io')
+
     const newMessage = await messageService.postMessageToConversation(senderId, conversationId, content)
+
+    io.to(conversationId).emit('new_message', newMessage)
     
     return res.status(201).json({
       message: "Message created succesfully",
