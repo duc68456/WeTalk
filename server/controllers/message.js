@@ -28,4 +28,25 @@ router.post('/', async (req, res, next) => {
   }
 })
 
+router.get('/:conversationId', async (req, res, next) => {
+  try {
+    const { conversationId } = req.params
+    const userId = req.user.userId
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+
+    const messages = await messageService.getMessagesByConversationId(userId, conversationId, page, limit)
+
+    return res.status(200).json({
+      message: "Messages of this conversation",
+      messages: messages
+    })
+  }
+  catch (error) {
+    logger.info(error)
+    next(error)
+  }
+})
+
 export default router

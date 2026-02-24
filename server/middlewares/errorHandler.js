@@ -29,6 +29,13 @@ const errorHandler = (err, req, res, next) => {
   else if (err.message === 'INVALID_LOGIN_INFO') {
     return res.status(401).json({ message: "Invalid email or password" })
   }
+    
+  else if (error.message === 'NOT_FOUND_OR_NOT_ALLOWED') {
+    return res.status(404).json({ message: "Conversation not found or you are not a member" });
+  }
+  else if (error.message === 'ONLY_ADMIN_CAN_DELETE_GROUP') {
+    return res.status(403).json({ message: "Only Admin can delete this group" });
+  }
 
   else if (err instanceof zod.ZodError) {
     const paths = err.issues.map(e => e.path)

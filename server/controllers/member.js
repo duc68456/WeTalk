@@ -1,6 +1,6 @@
 import express from 'express'
 import zod from 'zod'
-import { RoleName } from '@prisma/client'
+import { RoleName, MemberStatus } from '@prisma/client'
 
 import logger from '../utils/logger.js'
 
@@ -11,7 +11,13 @@ const router = express.Router()
 const updateMemberSchema = zod.object({
   role: zod.nativeEnum(RoleName, {
     errorMap: () => ({ message: "Role is not valid" })
-  }),
+  }).optional(),
+  
+  status: zod.nativeEnum(MemberStatus, {
+    errorMap: () => ({ message: "Status is not valid" })
+  }).optional(),
+}).refine(data => data.role !== undefined || data.status !== undefined, {
+  message: "At least one field (role or status) must be provided to update"
 })
 
 router.get('/', async (req, res, next) => {
@@ -70,16 +76,21 @@ router.delete('/', async (req, res, next) => {
 router.put('/', async (req, res, next) => {
   try {
     const { userId, conversationId } = req.query
-
-    const validatedData = updateMemberSchema.parse(req.body)
-
-    const { role } = validatedData
     const requesterId = req.user.userId;
 
-    const editedMember = await memberService.editRoleOfMember(requesterId, userId, conversationId, role)
+    const validatedData = updateMemberSchema.parse(req.body)
+    
+    const { role, status } = validatedData
+
+    const editedMember = await memberService.updateMember(
+      requesterId, 
+      userId, 
+      conversationId, 
+      { role, status }
+    )
 
     return res.status(200).json({
-      message: "Member's role editted succesfully",
+      message: "Member updated successfully",
       member: editedMember
     })
   }

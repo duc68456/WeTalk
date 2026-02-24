@@ -4,7 +4,7 @@ const messageSchema = new mongoose.Schema({
   conversationId: {
       type: String,
       required: [true, 'conversationId is required'],
-      index: true,
+      // index: true,
   },
 
   senderId: {
@@ -28,6 +28,9 @@ const messageSchema = new mongoose.Schema({
 
   fileUrl: {
     type: String,
+    required: function() {
+      return this.messageType === 'IMAGE' || this.messageType === 'FILE';
+    },
     default: null,
   },
 

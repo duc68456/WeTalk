@@ -4,7 +4,10 @@ import logger from '../utils/logger.js'
 const getMyConversation = async (userId) => {
     const memberRecords = await prisma.member.findMany({
       where: {
-        userId: userId
+        userId: userId,
+        conversation: {
+          deletedAt: null
+        }
       },
       include: {
         conversation: {
@@ -25,11 +28,10 @@ const getMyConversation = async (userId) => {
 }
 
 const getConversationById = async (conversationId, requesterId) => {
-  // logger.info('conversationId in service: ', conversationId)
-
   const conversation = await prisma.conversation.findFirst({
     where: {
       id: conversationId,
+      deletedAt: null,
       members: {
         some: { userId: requesterId }
       }
@@ -38,22 +40,19 @@ const getConversationById = async (conversationId, requesterId) => {
       members: {
         include: {
           user: true,
-          role: true
+          // role: true
         }
       }
     }
   })
 
-  // logger.info('conversation in service: ', conversation)
-
   return conversation
 }
 
-const createConversation = async (type, inviteesIds, creatorId, allMembersIds) => {
+const createConversation = async (type, inviteesIds, creatorId, allMembersIds, name) => {
   if (type === 'DIRECT') {
     logger.info(inviteesIds.length)
     if (inviteesIds.length !== 1) {
-      // return res.status(400).json({ message: "DIRECT chat can only have 2 participant" });
       throw new Error('DIRECT_MIN_MEMBER')
     }
     const partnerId = inviteesIds[0]
@@ -72,10 +71,6 @@ const createConversation = async (type, inviteesIds, creatorId, allMembersIds) =
     })
 
     if (existingConversation) {
-      // return res.status(200).json({
-      //   message: "This conversation already exist",
-      //   conversation: existingConversation
-      // })
       return { 
           data: existingConversation, 
           isAlreadyExisted: true 
@@ -97,8 +92,6 @@ const createConversation = async (type, inviteesIds, creatorId, allMembersIds) =
       }
     })
 
-    // logger.info(newConversation)
-
     return { 
       data: newConversation, 
       isAlreadyExisted: false 
@@ -107,13 +100,13 @@ const createConversation = async (type, inviteesIds, creatorId, allMembersIds) =
 
   else if (type === 'GROUP') {
     if (inviteesIds.length < 2) {
-      // return res.status(422).json({ message: "Group must have at least 3 members" })
       throw new Error('GROUP_MIN_MEMBER')
     }
 
     const newGroup = await prisma.conversation.create({
       data: {
         type: 'GROUP',
+        name: name,
         members: {
           create: [
             {
@@ -138,8 +131,43 @@ const createConversation = async (type, inviteesIds, creatorId, allMembersIds) =
   }
 }
 
+const deleteConversation = async (conversationId, requesterId) => {
+  const conversation = await prisma.conversation.findUnique({
+    where: { 
+      id: conversationId 
+    },
+    include: {
+      members: {
+        where: { userId: requesterId }
+      }
+    }
+  });
+
+  if (!conversation || conversation.members.length === 0) {
+    throw new Error('NOT_FOUND_OR_NOT_ALLOWED');
+  }
+
+  const requesterRole = conversation.members[0].role;
+
+  if (conversation.type === 'GROUP' && requesterRole !== 'ADMIN') {
+    throw new Error('ONLY_ADMIN_CAN_DELETE_GROUP');
+  }
+
+  const deletedConversation = await prisma.conversation.update({
+    where: { 
+      id: conversationId 
+    },
+    data: { 
+      deletedAt: new Date()
+    }
+  });
+
+  return deletedConversation;
+}
+
 export default {
   getMyConversation,
   getConversationById,
-  createConversation
+  createConversation,
+  deleteConversation
 }

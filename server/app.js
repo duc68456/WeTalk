@@ -31,10 +31,6 @@ io.on('connection', (socket) => {
     socket.join(conversationId)
     logger.info('User with id', socket.id, 'has joined room', conversationId)
   })
-
-  // socket.on('new_message', (newMessage) => {
-  //   logger.info('User with id', socket.id, 'has received message: ', newMessage)
-  // })
 })
 
 app.use(express.json())

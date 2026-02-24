@@ -77,7 +77,9 @@ const deleteMember = async (requesterId, userId, conversationId) => {
   return memberDeleted
 }
 
-const editRoleOfMember = async (requesterId, userId, conversationId, role) => {
+const updateMember = async (requesterId, userId, conversationId, updateData) => {
+  const { role, status } = updateData;
+
   const requesterMember = await prisma.member.findUnique({
     where: {
       userId_conversationId: {
@@ -87,8 +89,22 @@ const editRoleOfMember = async (requesterId, userId, conversationId, role) => {
     },
   });
 
-  if (!requesterMember || (requesterMember.role !== 'ADMIN')) {
-    throw new Error('NOT_ALLOWED')
+  if (!requesterMember) {
+    throw new Error('NOT_ALLOWED');
+  }
+
+  if (role !== undefined) {
+    if (requesterMember.role !== 'ADMIN') {
+      throw new Error('NOT_ALLOWED');
+    }
+  }
+
+  if (status !== undefined) {
+    if (requesterId !== userId) {
+      if (requesterMember.role !== 'ADMIN') {
+        throw new Error('NOT_ALLOWED'); 
+      }
+    }
   }
 
   const editedMember = await prisma.member.update({
@@ -99,16 +115,17 @@ const editRoleOfMember = async (requesterId, userId, conversationId, role) => {
       }
     },
     data: {
-      role: role
+      role: role,
+      status: status
     }
-  })
+  });
 
-  return editedMember
+  return editedMember;
 }
 
 export default {
   getMembersByConversationId,
   addMemberToConversation,
   deleteMember,
-  editRoleOfMember
+  updateMember
 }
