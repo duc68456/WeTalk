@@ -1,0 +1,22 @@
+.auth-brand {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.auth-brand-logo {
+  display: block;
+  width: 48px;
+  height: 48px;
+}
+
+.auth-brand-name {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 32px;
+  color: #2563eb;
+  letter-spacing: -0.6px;
+}

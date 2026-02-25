@@ -1,0 +1,37 @@
+.auth-card-stack--signup {
+  gap: 32px;
+}
+
+.auth-card--signup {
+  padding-bottom: 28px;
+}
+
+.auth-form--signup {
+  margin-top: 18px;
+  gap: 14px;
+}
+
+.signup-heading {
+  margin-top: 18px;
+}
+
+.signup-subtitle {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: rgba(17, 24, 39, 0.6);
+}
+
+.signup-switch {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.signup-switch-text {
+  color: rgba(17, 24, 39, 0.65);
+}

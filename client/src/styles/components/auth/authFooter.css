@@ -1,0 +1,28 @@
+.auth-footer {
+  margin-top: 24px;
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: baseline;
+}
+
+.auth-footer-text {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #4a5565;
+}
+
+.auth-footer-link {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.auth-footer-link:hover {
+  text-decoration: underline;
+}
