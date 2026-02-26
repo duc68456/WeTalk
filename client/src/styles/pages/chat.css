@@ -49,3 +49,58 @@
   /* Mobile layout intentionally not handled here because it needs its own
      viewport-filling + internal-scroll rules. Keeping desktop spec strict. */
 }
+
+/* Horizontal screen (landscape) custom layout only.
+   Portrait/vertical remains exactly the same. */
+@media (max-width: 980px) {
+  .chat-page {
+    padding: 10px;
+  }
+
+  .chat-shell {
+    --chat-gap: 10px;
+  }
+
+  .chat-sidebar {
+    width: 56px;
+    padding: 10px;
+    border-radius: 14px;
+  }
+
+  .chat-sidebar-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+  }
+
+  .chat-panel {
+    border-radius: 14px;
+  }
+
+  /* In narrow mode, the visible panel should fill remaining width beside the sidebar. */
+  .chat-panel--list,
+  .chat-panel--thread {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* No resizer in narrow mode. */
+  .chat-resize {
+    display: none;
+  }
+
+  .chat-header {
+    height: 64px;
+    padding: 0 16px;
+  }
+
+  .chat-composer {
+    height: 72px;
+    padding: 14px 16px 0;
+  }
+
+  .chat-messages {
+    padding: 10px 16px 0 16px;
+  }
+}

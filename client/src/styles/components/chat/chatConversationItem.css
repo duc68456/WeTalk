@@ -57,17 +57,19 @@
 }
 
 .chat-convo-name {
-  font-size: 14.5px;
-  line-height: 20px;
-  font-weight: 600;
   color: #111827;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 20px; /* 142.857% */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .chat-convo-name--active {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .chat-convo-time {
@@ -85,10 +87,12 @@
 }
 
 .chat-convo-preview {
+  color: #6A7282;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   font-size: 12px;
-  line-height: 16px;
+  font-style: normal;
   font-weight: 500;
-  color: #6a7282;
+  line-height: 16px; /* 133.333% */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

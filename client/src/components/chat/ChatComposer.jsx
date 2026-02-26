@@ -8,6 +8,7 @@ import sendIcon from '../../assets/icons/chat/send.svg'
 
 export default function ChatComposer({ value, onChange, onSend }) {
   const send = useCallback(() => onSend?.(), [onSend])
+  const hasMessage = Boolean(value?.trim())
 
   return (
     <div className="chat-composer">
@@ -35,7 +36,13 @@ export default function ChatComposer({ value, onChange, onSend }) {
         </button>
       </div>
 
-      <button className="chat-composer-send" type="button" aria-label="Send" onClick={send}>
+      <button
+        className={`chat-composer-send ${hasMessage ? 'chat-composer-send--active' : ''}`}
+        type="button"
+        aria-label="Send"
+        onClick={send}
+        disabled={!hasMessage}
+      >
         <img src={sendIcon} alt="" />
       </button>
     </div>

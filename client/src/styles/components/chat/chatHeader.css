@@ -13,6 +13,40 @@
   gap: 12px;
 }
 
+.chat-header-back {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  border: 0.8px solid #e5e7eb;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition:
+    background var(--t-med) var(--ease-out),
+    box-shadow var(--t-med) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+
+.chat-header-back img {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
+.chat-header-back:hover {
+  background: rgba(17, 24, 39, 0.03);
+}
+
+.chat-header-back:active {
+  transform: translateY(0.5px);
+}
+
+.chat-header-back:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 .chat-header-meta {
   display: flex;
   flex-direction: column;

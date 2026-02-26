@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import '../styles/pages/chat.css'
 
@@ -13,6 +13,11 @@ export default function Chat({ onLogout }) {
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState('')
   const [activeConversationId, setActiveConversationId] = useState('sarah')
+
+  // Narrow landscape behavior: show only sidebar + thread by default.
+  const [isNarrowLandscape, setIsNarrowLandscape] = useState(false)
+  // In narrow mode, we show ONE panel at a time: 'list' or 'thread'.
+  const [narrowView, setNarrowView] = useState('thread')
 
   const [listWidth, setListWidth] = useState(340)
   const dragStart = useRef({ x: 0, width: 340 })
@@ -146,44 +151,77 @@ export default function Chat({ onLogout }) {
     setMessage('')
   }
 
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 980px)')
+    const update = () => {
+      const matches = mq.matches
+      setIsNarrowLandscape(matches)
+
+      // In narrow mode, default to thread-only.
+      if (matches) setNarrowView('thread')
+    }
+
+    update()
+
+    // Safari uses addListener/removeListener.
+    if (mq.addEventListener) mq.addEventListener('change', update)
+    else mq.addListener(update)
+
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener('change', update)
+      else mq.removeListener(update)
+    }
+  }, [])
+
   return (
-    <div className="chat-page">
+    <div className="chat-page" data-narrow={isNarrowLandscape ? 'true' : 'false'}>
       <div className="chat-shell">
         <ChatSidebar onLogout={onLogout} />
 
-        <section className="chat-panel chat-panel--list" style={{ width: `${listWidth}px` }}>
-          <ChatConversationList
-            title="Messages"
-            search={search}
-            onSearchChange={setSearch}
-            conversations={filteredConversations}
-            activeId={activeConversationId}
-            onSelectConversation={setActiveConversationId}
+        {(!isNarrowLandscape || narrowView === 'list') && (
+          <section className="chat-panel chat-panel--list" style={{ width: `${listWidth}px` }}>
+            <ChatConversationList
+              title="Messages"
+              search={search}
+              onSearchChange={setSearch}
+              conversations={filteredConversations}
+              activeId={activeConversationId}
+              onSelectConversation={(id) => {
+                setActiveConversationId(id)
+                if (isNarrowLandscape) setNarrowView('thread')
+              }}
+            />
+          </section>
+        )}
+
+        {!isNarrowLandscape && (
+          <ChatResizeHandle
+            onDragStart={(e) => {
+              dragStart.current = { x: e.clientX, width: listWidth }
+            }}
+            onDrag={(e) => {
+              const dx = e.clientX - dragStart.current.x
+              setListWidth(clampListWidth(dragStart.current.width + dx))
+            }}
           />
-        </section>
+        )}
 
-        <ChatResizeHandle
-          onDragStart={(e) => {
-            dragStart.current = { x: e.clientX, width: listWidth }
-          }}
-          onDrag={(e) => {
-            const dx = e.clientX - dragStart.current.x
-            setListWidth(clampListWidth(dragStart.current.width + dx))
-          }}
-        />
+        {(!isNarrowLandscape || narrowView === 'thread') && (
+          <section className="chat-panel chat-panel--thread">
+            <ChatHeader
+              name={activeConversation?.name}
+              initials={activeConversation?.initials}
+              status="Active now"
+              presence={activeConversation?.status}
+              showBack={isNarrowLandscape}
+              onBack={() => setNarrowView('list')}
+            />
 
-        <section className="chat-panel chat-panel--thread">
-          <ChatHeader
-            name={activeConversation?.name}
-            initials={activeConversation?.initials}
-            status="Active now"
-            presence={activeConversation?.status}
-          />
+            <ChatMessageList messages={messages} />
 
-          <ChatMessageList messages={messages} />
-
-          <ChatComposer value={message} onChange={setMessage} onSend={onSend} />
-        </section>
+            <ChatComposer value={message} onChange={setMessage} onSend={onSend} />
+          </section>
+        )}
       </div>
     </div>
   )

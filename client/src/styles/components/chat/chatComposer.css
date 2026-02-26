@@ -93,8 +93,28 @@
     box-shadow var(--t-med) var(--ease-out);
 }
 
+.chat-composer-send:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.chat-composer-send--active {
+  background: #2563eb;
+  box-shadow:
+    0px 10px 15px 0px rgba(43, 127, 255, 0.2),
+    0px 4px 6px 0px rgba(43, 127, 255, 0.2);
+}
+
 .chat-composer-send:hover {
   background: #e5e7eb;
+}
+
+.chat-composer-send--active:hover {
+  background: #1d4ed8;
+}
+
+.chat-composer-send:disabled:hover {
+  background: #f3f4f6;
 }
 
 .chat-composer-send:active {
@@ -110,4 +130,9 @@
   width: 20px;
   height: 20px;
   display: block;
+}
+
+/* Colorize the SVG icon when active by filtering the image (works with <img src="*.svg">). */
+.chat-composer-send--active img {
+  filter: brightness(0) invert(1);
 }
