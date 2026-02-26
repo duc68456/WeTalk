@@ -13,7 +13,7 @@ import mailIcon from '../assets/icons/common/mail.svg'
 import lockIcon from '../assets/icons/common/lock.svg'
 import eyeIcon from '../assets/icons/common/eye.svg'
 
-export default function Login({ onNavigateSignUp }) {
+export default function Login({ onNavigateSignUp, onNavigateChat }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -31,6 +31,9 @@ export default function Login({ onNavigateSignUp }) {
 
     // TODO: connect to your server auth endpoint
     console.log('Login submit', { email, password })
+
+    // Temporary: let you preview the main chat screen without wiring auth yet.
+    onNavigateChat?.()
   }
 
   return (

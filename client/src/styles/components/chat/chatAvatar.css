@@ -1,0 +1,63 @@
+.chat-avatar {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.chat-avatar-circle {
+  border-radius: 999px;
+  border: 0.8px solid #e5e7eb;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  display: grid;
+  place-items: center;
+  color: #4a5565;
+  font-weight: 600;
+}
+
+.chat-avatar--sm .chat-avatar-circle {
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.chat-avatar--md .chat-avatar-circle {
+  width: 44px;
+  height: 44px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.chat-avatar--lg .chat-avatar-circle {
+  width: 44px;
+  height: 44px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.chat-avatar-presence {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1.6px solid #ffffff;
+  background: #d1d5dc;
+}
+
+.chat-avatar--lg .chat-avatar-presence {
+  width: 14px;
+  height: 14px;
+}
+
+.chat-avatar-presence--online {
+  background: #00c950;
+}
+
+.chat-avatar-presence--away {
+  background: #f0b100;
+}
+
+.chat-avatar-presence--offline {
+  background: #d1d5dc;
+}

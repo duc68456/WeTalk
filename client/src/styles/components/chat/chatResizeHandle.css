@@ -1,0 +1,54 @@
+.chat-resize {
+  height: 100%;
+  width: 8px;
+  flex: 0 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+}
+
+.chat-resize-gutter {
+  width: 8px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+}
+
+.chat-resize-handle {
+  width: 6px;
+  height: 192px;
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.35); /* dim slate */
+  box-shadow:
+    0px 1px 2px rgba(0, 0, 0, 0.08),
+    0px 6px 18px rgba(17, 24, 39, 0.08);
+  transition:
+    background-color var(--t-med) var(--ease-in-out),
+    box-shadow var(--t-med) var(--ease-out),
+    transform var(--t-med) var(--ease-out),
+    opacity var(--t-fast) var(--ease-out);
+  opacity: 0.92;
+}
+
+.chat-resize:hover .chat-resize-handle {
+  background: rgba(59, 130, 246, 0.95); /* blue-500-ish */
+  opacity: 1;
+  transform: scaleX(1.03);
+  box-shadow:
+    0px 1px 2px rgba(0, 0, 0, 0.1),
+    0px 10px 24px rgba(17, 24, 39, 0.12);
+}
+
+.chat-resize--dragging .chat-resize-handle {
+  background: rgba(59, 130, 246, 0.95); /* blue-500-ish */
+  opacity: 1;
+  transform: scaleX(1.03);
+  box-shadow:
+    0px 1px 2px rgba(0, 0, 0, 0.1),
+    0px 10px 24px rgba(17, 24, 39, 0.12);
+}

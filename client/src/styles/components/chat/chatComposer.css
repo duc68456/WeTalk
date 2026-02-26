@@ -1,0 +1,113 @@
+.chat-composer {
+  height: 86.4px;
+  border-top: 0.8px solid #e5e7eb;
+  padding: 20.8px 24px 0;
+  background: #ffffff;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.chat-composer-inputWrap {
+  flex: 1;
+  height: 45.6px;
+  border-radius: 14px;
+  border: 0.8px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16.8px;
+  transition:
+    border-color var(--t-fast) var(--ease-out),
+    box-shadow var(--t-med) var(--ease-out),
+    background var(--t-fast) var(--ease-out);
+}
+
+.chat-composer-inputWrap:focus-within {
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: var(--focus-ring);
+  background: #ffffff;
+}
+
+.chat-composer-icon {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border-radius: 10px;
+  transition:
+    background var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+
+.chat-composer-icon:hover {
+  background: rgba(17, 24, 39, 0.05);
+}
+
+.chat-composer-icon:active {
+  transform: translateY(0.5px);
+}
+
+.chat-composer-icon:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.chat-composer-icon img {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.chat-composer-input {
+  flex: 1;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: #111827;
+}
+
+.chat-composer-input::placeholder {
+  color: #99a1af;
+}
+
+.chat-composer-send {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 0;
+  background: #f3f4f6;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    background var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out),
+    box-shadow var(--t-med) var(--ease-out);
+}
+
+.chat-composer-send:hover {
+  background: #e5e7eb;
+}
+
+.chat-composer-send:active {
+  transform: translateY(0.5px);
+}
+
+.chat-composer-send:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.chat-composer-send img {
+  width: 20px;
+  height: 20px;
+  display: block;
+}

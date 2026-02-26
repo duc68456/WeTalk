@@ -1,0 +1,121 @@
+.chat-header {
+  height: 78.787px;
+  border-bottom: 0.8px solid #e5e7eb;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-header-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+}
+
+.chat-header-name {
+  font-size: 20px;
+  line-height: 30px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.chat-header-status {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: #6a7282;
+}
+
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-header-ai {
+  height: 36px;
+  width: 134px;
+  border-radius: 14px;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  transition:
+    transform var(--t-fast) var(--ease-out),
+    filter var(--t-fast) var(--ease-out),
+    box-shadow var(--t-med) var(--ease-out);
+}
+
+.chat-header-ai:hover {
+  filter: brightness(1.02);
+}
+
+.chat-header-ai:active {
+  transform: translateY(0.5px);
+}
+
+.chat-header-ai:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.chat-header-ai img {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.chat-header-ai span {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.chat-header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  border: 0.8px solid #e5e7eb;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition:
+    background var(--t-med) var(--ease-out),
+    box-shadow var(--t-med) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+
+.chat-header-icon:hover {
+  background: rgba(17, 24, 39, 0.03);
+}
+
+.chat-header-icon:active {
+  transform: translateY(0.5px);
+}
+
+.chat-header-icon:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.chat-header-icon--ghost {
+  border: 0;
+}
+
+.chat-header-icon img {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
