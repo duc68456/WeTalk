@@ -1,3 +1,5 @@
+import axios from 'axios'
+
 import { useState } from 'react'
 
 import '../styles/pages/signup.css'
@@ -12,8 +14,9 @@ import userIcon from '../assets/icons/common/user.svg'
 import mailIcon from '../assets/icons/common/mail.svg'
 import lockIcon from '../assets/icons/common/lock.svg'
 import eyeIcon from '../assets/icons/common/eye.svg'
+import errorIcon from '../assets/icons/common/error-exclamation.svg'
 
-export default function SignUp({ onNavigateLogin }) {
+export default function SignUp({ onNavigateLogin, onSignUpSuccess }) {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -22,9 +25,14 @@ export default function SignUp({ onNavigateLogin }) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errors, setErrors] = useState({})
+  const [submitError, setSubmitError] = useState('')
 
-  const onSubmit = (e) => {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
+
+    setSubmitError('')
 
     const nextErrors = {}
     if (!fullName.trim()) nextErrors.fullName = 'Full name is required'
@@ -38,6 +46,26 @@ export default function SignUp({ onNavigateLogin }) {
 
     // TODO: connect to your server register endpoint
     console.log('Sign up submit', { fullName, email, password })
+    try {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/register`, {
+        email: email,
+        password: password,
+        name: fullName
+      })
+
+      const user = res.data.user
+
+      onSignUpSuccess(user)
+    }
+    catch (error) {
+      const message = error.response.data.message
+      setSubmitError(message)
+    }
+
+    
+
+    // Temporary: show the success screen until the API is wired.
+    // onSignUpSuccess?.()
   }
 
   return (
@@ -51,7 +79,7 @@ export default function SignUp({ onNavigateLogin }) {
             <p className="signup-subtitle">Join to start chatting</p>
           </div>
 
-          <form className="auth-form auth-form--signup" onSubmit={onSubmit} noValidate>
+          <form className="auth-form auth-form--signup" onSubmit={handleSubmit} noValidate>
             <AuthField label="Full Name" htmlFor="fullName" error={errors.fullName}>
               <AuthTextInput
                 id="fullName"
@@ -125,6 +153,13 @@ export default function SignUp({ onNavigateLogin }) {
             </AuthField>
 
             <AuthSubmitButton>Sign Up</AuthSubmitButton>
+            
+            {submitError ? (
+              <div className="auth-error" role="alert" aria-live="polite">
+                <img className="auth-error-icon" src={errorIcon} alt="" aria-hidden="true" />
+                <p className="auth-error-text">{submitError}</p>
+              </div>
+            ) : null}
           </form>
 
           <div className="signup-switch">

@@ -12,7 +12,7 @@
   color: #111827;
 }
 
-.auth-error {
+.auth-field-error {
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   font-size: 12px;
   line-height: 16px;

@@ -1,3 +1,5 @@
+import axios from 'axios'
+
 import { useState } from 'react'
 
 import '../styles/pages/login.css'
@@ -12,15 +14,24 @@ import AuthTextInput from '../components/auth/AuthTextInput.jsx'
 import mailIcon from '../assets/icons/common/mail.svg'
 import lockIcon from '../assets/icons/common/lock.svg'
 import eyeIcon from '../assets/icons/common/eye.svg'
+import errorIcon from '../assets/icons/common/error-exclamation.svg'
 
-export default function Login({ onNavigateSignUp, onNavigateChat }) {
+import logger from '../utils/logger.js'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
+export default function Login({ onNavigateSignUp, onNavigateChat, onLoginSuccess }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
+  const [submitError, setSubmitError] = useState('')
 
-  const onSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Clear any previous server-side error
+    setSubmitError('')
 
     const nextErrors = {}
     if (!email.trim()) nextErrors.email = 'Email is required'
@@ -31,9 +42,35 @@ export default function Login({ onNavigateSignUp, onNavigateChat }) {
 
     // TODO: connect to your server auth endpoint
     console.log('Login submit', { email, password })
+    // console.log('email: ', email, ' password: ', password)
+    try {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/login`, {
+        email: email,
+        password: password
+      })
+
+      const user = res.data.user
+
+      onLoginSuccess(user)
+
+      // logger.info('Login response:', res.data)
+    } 
+    catch (err) {
+      const status = err?.response?.status
+      const data = err?.response?.data
+      logger.error('Login failed', { status, data, message: err?.message })
+
+      const message =
+        (typeof data?.message === 'string' && data.message) ||
+        (Array.isArray(data?.details) && data.details.join('\n')) ||
+        (status === 401 ? 'Invalid email or password' : '') ||
+        'Login failed. Please try again.'
+
+      setSubmitError(message)
+    }
 
     // Temporary: let you preview the main chat screen without wiring auth yet.
-    onNavigateChat?.()
+    // onNavigateChat?.()
   }
 
   return (
@@ -44,7 +81,7 @@ export default function Login({ onNavigateSignUp, onNavigateChat }) {
 
           <h1 className="auth-title">Welcome Back</h1>
 
-          <form className="auth-form" onSubmit={onSubmit} noValidate>
+          <form className="auth-form" onSubmit={handleSubmit} noValidate>
             <AuthField label="Email Address" htmlFor="email" error={errors.email}>
               <AuthTextInput
                 id="email"
@@ -86,6 +123,13 @@ export default function Login({ onNavigateSignUp, onNavigateChat }) {
             </div>
 
             <AuthSubmitButton>Log In</AuthSubmitButton>
+
+            {submitError ? (
+              <div className="auth-error" role="alert" aria-live="polite">
+                <img className="auth-error-icon" src={errorIcon} alt="" aria-hidden="true" />
+                <p className="auth-error-text">{submitError}</p>
+              </div>
+            ) : null}
           </form>
 
           <AuthFooter

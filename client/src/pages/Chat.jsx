@@ -33,7 +33,7 @@ export default function Chat({ onLogout }) {
     () => [
       {
         id: 'sarah',
-        name: 'Sarah Chen',
+        name: 'Nguyễn Văn Ấn',
         initials: 'SC',
         time: '2m',
         preview: 'Sounds good! See you then.',

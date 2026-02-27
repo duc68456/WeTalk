@@ -30,10 +30,10 @@ const errorHandler = (err, req, res, next) => {
     return res.status(401).json({ message: "Invalid email or password" })
   }
     
-  else if (error.message === 'NOT_FOUND_OR_NOT_ALLOWED') {
+  else if (err.message === 'NOT_FOUND_OR_NOT_ALLOWED') {
     return res.status(404).json({ message: "Conversation not found or you are not a member" });
   }
-  else if (error.message === 'ONLY_ADMIN_CAN_DELETE_GROUP') {
+  else if (err.message === 'ONLY_ADMIN_CAN_DELETE_GROUP') {
     return res.status(403).json({ message: "Only Admin can delete this group" });
   }
 

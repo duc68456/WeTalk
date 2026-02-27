@@ -7,7 +7,7 @@ export default function AuthField({ label, htmlFor, error, children }) {
         {label}
       </label>
       {children}
-      {error ? <div className="auth-error">{error}</div> : null}
+      {error ? <div className="auth-field-error">{error}</div> : null}
     </div>
   )
 }
