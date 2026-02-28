@@ -8,15 +8,16 @@ import ChatHeader from '../components/chat/ChatHeader.jsx'
 import ChatMessageList from '../components/chat/ChatMessageList.jsx'
 import ChatComposer from '../components/chat/ChatComposer.jsx'
 import ChatResizeHandle from '../components/chat/ChatResizeHandle.jsx'
+import ChatProfileSettingsPanel from '../components/chat/ChatProfileSettingsPanel.jsx'
 
-export default function Chat({ onLogout }) {
+export default function Chat({ onLogout, user, token, onUserUpdated }) {
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState('')
   const [activeConversationId, setActiveConversationId] = useState('sarah')
 
-  // Narrow landscape behavior: show only sidebar + thread by default.
+  const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false)
+
   const [isNarrowLandscape, setIsNarrowLandscape] = useState(false)
-  // In narrow mode, we show ONE panel at a time: 'list' or 'thread'.
   const [narrowView, setNarrowView] = useState('thread')
 
   const [listWidth, setListWidth] = useState(340)
@@ -28,7 +29,7 @@ export default function Chat({ onLogout }) {
     const max = 520
     return Math.max(min, Math.min(max, w))
   }
-
+  // console.log('token in Chat: ', token)
   const conversations = useMemo(
     () => [
       {
@@ -157,8 +158,11 @@ export default function Chat({ onLogout }) {
       const matches = mq.matches
       setIsNarrowLandscape(matches)
 
-      // In narrow mode, default to thread-only.
-      if (matches) setNarrowView('thread')
+      // In narrow mode, choose the correct visible view.
+      // If settings is open, keep showing settings; otherwise default to thread.
+      if (matches) {
+        setNarrowView(isProfileSettingsOpen ? 'settings' : 'thread')
+      }
     }
 
     update()
@@ -171,14 +175,26 @@ export default function Chat({ onLogout }) {
       if (mq.removeEventListener) mq.removeEventListener('change', update)
       else mq.removeListener(update)
     }
-  }, [])
+  }, [isProfileSettingsOpen])
 
   return (
     <div className="chat-page" data-narrow={isNarrowLandscape ? 'true' : 'false'}>
       <div className="chat-shell">
-        <ChatSidebar onLogout={onLogout} />
+        <ChatSidebar
+          onLogout={onLogout}
+          activeItem={isProfileSettingsOpen ? 'home' : 'messages'}
+          onOpenHome={() => {
+            setIsProfileSettingsOpen(true)
+            if (isNarrowLandscape) setNarrowView('settings')
+          }}
+          onOpenMessages={() => {
+            setIsProfileSettingsOpen(false)
+            if (isNarrowLandscape) setNarrowView('thread')
+          }}
+        />
 
-        {(!isNarrowLandscape || narrowView === 'list') && (
+        {/* When profile settings is open, mimic the Figma screen and hide the other docks/panels. */}
+        {!isProfileSettingsOpen && (!isNarrowLandscape || narrowView === 'list') && (
           <section className="chat-panel chat-panel--list" style={{ width: `${listWidth}px` }}>
             <ChatConversationList
               title="Messages"
@@ -194,7 +210,7 @@ export default function Chat({ onLogout }) {
           </section>
         )}
 
-        {!isNarrowLandscape && (
+        {!isProfileSettingsOpen && !isNarrowLandscape && (
           <ChatResizeHandle
             onDragStart={(e) => {
               dragStart.current = { x: e.clientX, width: listWidth }
@@ -206,7 +222,7 @@ export default function Chat({ onLogout }) {
           />
         )}
 
-        {(!isNarrowLandscape || narrowView === 'thread') && (
+        {!isProfileSettingsOpen && (!isNarrowLandscape || narrowView === 'thread') && (
           <section className="chat-panel chat-panel--thread">
             <ChatHeader
               name={activeConversation?.name}
@@ -221,6 +237,15 @@ export default function Chat({ onLogout }) {
 
             <ChatComposer value={message} onChange={setMessage} onSend={onSend} />
           </section>
+        )}
+
+        {/* Profile Settings panel (UI-only). In narrow mode, it becomes its own view. */}
+        {isProfileSettingsOpen && (!isNarrowLandscape || narrowView === 'settings') && (
+          <ChatProfileSettingsPanel
+            user={user}
+            token={token}
+            onUserUpdated={onUserUpdated}
+          />
         )}
       </div>
     </div>

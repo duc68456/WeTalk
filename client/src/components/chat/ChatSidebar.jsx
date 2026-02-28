@@ -7,7 +7,12 @@ import navUserIcon from '../../assets/icons/chat/user.svg'
 import navSettingsIcon from '../../assets/icons/chat/settings.svg'
 import navLogoutIcon from '../../assets/icons/chat/logout.svg'
 
-export default function ChatSidebar({ onLogout }) {
+export default function ChatSidebar({
+  onLogout,
+  activeItem = 'messages',
+  onOpenHome,
+  onOpenMessages,
+}) {
   return (
     <aside className="chat-sidebar" aria-label="Primary navigation">
       <div className="chat-sidebar-top">
@@ -16,11 +21,21 @@ export default function ChatSidebar({ onLogout }) {
         </div>
 
         <nav className="chat-sidebar-nav" aria-label="Navigation">
-          <button className="chat-sidebar-btn" type="button" aria-label="Home">
+          <button
+            className={`chat-sidebar-btn ${activeItem === 'home' ? 'chat-sidebar-btn--active' : ''}`}
+            type="button"
+            aria-label="Home"
+            onClick={onOpenHome}
+          >
             <img src={navHomeIcon} alt="" />
           </button>
 
-          <button className="chat-sidebar-btn chat-sidebar-btn--active" type="button" aria-label="Messages">
+          <button
+            className={`chat-sidebar-btn ${activeItem === 'messages' ? 'chat-sidebar-btn--active' : ''}`}
+            type="button"
+            aria-label="Messages"
+            onClick={onOpenMessages}
+          >
             <img src={navMessageIcon} alt="" />
           </button>
 

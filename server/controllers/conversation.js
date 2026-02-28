@@ -43,10 +43,10 @@ router.get('/myConversation', async (req, res, next) => {
   try {
     const userId = req.user.userId
 
-    const memberRecords = await conversationService.getMyConversation(userId)
-    logger.info(memberRecords)
+    const myConversations = await conversationService.getMyConversation(userId)
+    // logger.info(myConversations)
 
-    res.status(200).json(memberRecords)
+    res.status(200).json(myConversations)
   }
   catch (error) {
     logger.error(error)

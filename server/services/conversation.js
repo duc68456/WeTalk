@@ -2,20 +2,39 @@ import prisma from '../config/db.js'
 import logger from '../utils/logger.js'
 
 const getMyConversation = async (userId) => {
-    const memberRecords = await prisma.member.findMany({
+    const myConversations = await prisma.member.findMany({
       where: {
         userId: userId,
         conversation: {
           deletedAt: null
         }
       },
-      include: {
+      select: {
         conversation: {
-          include: {
+          select: {
+            id: true,
+            type: true,
+            name: true,
+            createdAt: true,
             members: {
-              include: {
+              where: {
+                userId: {
+                  not: userId
+                }
+              },
+              select: {
+                // userId,
                 user: {
                   select: { id: true, name: true }
+                }
+              }
+            },
+            messages: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              include: {
+                sender: {
+                  select: { name: true }
                 }
               }
             }
@@ -24,7 +43,7 @@ const getMyConversation = async (userId) => {
       }
     })
 
-    return memberRecords
+    return myConversations
 }
 
 const getConversationById = async (conversationId, requesterId) => {

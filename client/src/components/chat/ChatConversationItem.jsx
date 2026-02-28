@@ -22,7 +22,8 @@ export default function ChatConversationItem({ conversation, active, onClick }) 
 
         <div className="chat-convo-bottom">
           <div className="chat-convo-preview">{preview}</div>
-          {unread > 0 ? <span className="chat-convo-badge">{unread}</span> : null}
+          {/* TEMP: hide unread badge */}
+          {/* {unread > 0 ? <span className="chat-convo-badge">{unread}</span> : null} */}
         </div>
       </div>
     </button>

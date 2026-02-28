@@ -54,8 +54,9 @@ export default function SignUp({ onNavigateLogin, onSignUpSuccess }) {
       })
 
       const user = res.data.user
+      const token = res.data.token
 
-      onSignUpSuccess(user)
+      onSignUpSuccess(user, token)
     }
     catch (error) {
       const message = error.response.data.message

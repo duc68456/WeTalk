@@ -46,31 +46,14 @@
 
 /* Server-side submit error message */
 .auth-error {
-  width: 100%;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-
-  padding: 16px;
-  background: #fef2f2;
-  border: 0.8px solid #ffc9c9;
-  border-radius: 14px;
-}
-
-.auth-error-icon {
-  width: 20px;
-  height: 20px;
-  display: block;
-  margin-top: 2px;
-  flex: 0 0 auto;
-}
-
-.auth-error-text {
   margin: 0;
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 400;
-  color: #c10007;
+  padding: 10px 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #b91c1c;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  line-height: 1.35;
   white-space: pre-line;
 }
 

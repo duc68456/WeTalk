@@ -11,14 +11,21 @@
   "author": "",
   "license": "ISC",
   "description": "",
+  "_notes": {
+    "migration": "MongoDB -> Postgres: mongoose is kept (not removed) to honor 'don't delete anything'. After migrating old message data to Postgres, you can remove mongoose + Mongo code.",
+    "legacyMongo": "MONGO_URI is now optional; Mongo connection code is commented out in server/config/db.js"
+  },
   "dependencies": {
     "@prisma/client": "^6.19.2",
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^1.41.3",
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.1",
+    "multer": "^2.1.0",
+    "multer-storage-cloudinary": "^4.0.0",
     "prisma": "^6.19.2",
     "socket.io": "^4.8.3"
   }

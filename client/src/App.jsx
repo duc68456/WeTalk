@@ -11,35 +11,57 @@ function App() {
     if (!savedUser || savedUser === "undefined") {
       return null;
     } 
-    console.log('saved User: ', savedUser)
+    // console.log('saved User: ', savedUser)
     return savedUser ? JSON.parse(savedUser) : null
+  })
+  const [token, setToken] = useState(() => {
+    const savedToken = localStorage.getItem('token')
+    if (!savedToken || savedToken === "undefined") {
+      return null;
+    } 
+    // console.log('saved User: ', savedUser)
+    return savedToken
   })
 
   const [route, setRoute] = useState(() => {
     return user ? 'chat' : 'login' 
   })
 
-  const handleLoginSuccess = (user) => {
+  const handleLoginSuccess = (user, token) => {
     setUser(user)
+    setToken(token)
     localStorage.setItem('user', JSON.stringify(user))
+    localStorage.setItem('token', token)
     setRoute('chat')
   }
 
-  const handleSignupSuccess = (user) => {
+  const handleSignupSuccess = (user, token) => {
     setUser(user)
+    setToken(token)
     localStorage.setItem('user', JSON.stringify(user))
+    localStorage.setItem('token', token)
     setRoute('signup-success')
   }
 
   const handleLogout = () => {
     setUser(null)
+    setToken(null)
     localStorage.removeItem('user')
+    localStorage.removeItem('token')
     setRoute('login')
+  }
+
+  const handleUserUpdated = (nextUser) => {
+    setUser(nextUser)
+    localStorage.setItem('user', JSON.stringify(nextUser))
   }
 
   if (route === 'chat') {
     return <Chat 
+      token={token}
+      user={user}
       onLogout = {handleLogout}
+      onUserUpdated={handleUserUpdated}
       />
   }
 

@@ -6,7 +6,8 @@ export default function ChatAvatar({ initials, presence = 'offline', size = 'sm'
       aria-label="Avatar"
     >
       <div className="chat-avatar-circle">{initials}</div>
-      <span className={`chat-avatar-presence chat-avatar-presence--${presence}`} aria-hidden="true" />
+      {/* TEMP: hide presence (online/away/offline) indicator */}
+      {/* <span className={`chat-avatar-presence chat-avatar-presence--${presence}`} aria-hidden="true" /> */}
     </div>
   )
 }

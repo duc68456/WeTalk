@@ -1,5 +1,4 @@
 import prisma from '../config/db.js'
-import Message from '../models/message.js'
 
 const postMessageToConversation = async (senderId, conversationId, content) => {
   const isMember = await prisma.member.findFirst({
@@ -14,6 +13,19 @@ const postMessageToConversation = async (senderId, conversationId, content) => {
     throw new Error('NOT_ALLOWED')
   }
 
+  const newMessage = await prisma.message.create({
+    data: {
+      conversationId,
+      senderId,
+      content,
+      messageType: 'TEXT',
+      isDeleted: false
+    }
+  })
+
+  return newMessage
+
+  /*
   const newMessage = await Message.create({
     conversationId: conversationId,
     senderId: senderId,
@@ -21,6 +33,7 @@ const postMessageToConversation = async (senderId, conversationId, content) => {
   })
 
   return newMessage
+  */
 }
 
 const getMessagesByConversationId = async (userId, conversationId, page, limit) => {
@@ -40,6 +53,27 @@ const getMessagesByConversationId = async (userId, conversationId, page, limit) 
   const pageNum = parseInt(page, 10);
   const skipNum = (pageNum - 1) * takeNum;
 
+  //
+  const messages = await prisma.message.findMany({
+    where: {
+      conversationId: conversationId,
+      isDeleted: false
+    },
+    orderBy: {
+      createdAt: 'desc'
+    },
+    skip: skipNum,
+    take: takeNum
+  })
+
+  const totalMessages = await prisma.message.count({
+    where: {
+      conversationId: conversationId,
+      isDeleted: false
+    }
+  })
+
+  /*
   const messages = await Message.find({ conversationId: conversationId })
     .sort({ createdAt: -1 })
     .skip(skipNum)
@@ -47,6 +81,7 @@ const getMessagesByConversationId = async (userId, conversationId, page, limit) 
     .lean();
 
   const totalMessages = await Message.countDocuments({ conversationId: conversationId });
+  */
 
   return {
     data: messages,

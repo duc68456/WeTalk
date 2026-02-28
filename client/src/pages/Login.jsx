@@ -14,7 +14,6 @@ import AuthTextInput from '../components/auth/AuthTextInput.jsx'
 import mailIcon from '../assets/icons/common/mail.svg'
 import lockIcon from '../assets/icons/common/lock.svg'
 import eyeIcon from '../assets/icons/common/eye.svg'
-import errorIcon from '../assets/icons/common/error-exclamation.svg'
 
 import logger from '../utils/logger.js'
 
@@ -48,14 +47,14 @@ export default function Login({ onNavigateSignUp, onNavigateChat, onLoginSuccess
         email: email,
         password: password
       })
+      // console.log('res: ', res)
+      // Clear any server-side error on success
+      setSubmitError('')
 
-      const user = res.data.user
+      onLoginSuccess?.(res.data.user, res.data.token)
 
-      onLoginSuccess(user)
-
-      // logger.info('Login response:', res.data)
-    } 
-    catch (err) {
+      logger.info('Login response:', res.data)
+    } catch (err) {
       const status = err?.response?.status
       const data = err?.response?.data
       logger.error('Login failed', { status, data, message: err?.message })
@@ -125,10 +124,9 @@ export default function Login({ onNavigateSignUp, onNavigateChat, onLoginSuccess
             <AuthSubmitButton>Log In</AuthSubmitButton>
 
             {submitError ? (
-              <div className="auth-error" role="alert" aria-live="polite">
-                <img className="auth-error-icon" src={errorIcon} alt="" aria-hidden="true" />
-                <p className="auth-error-text">{submitError}</p>
-              </div>
+              <p className="auth-error" role="alert" aria-live="polite">
+                {submitError}
+              </p>
             ) : null}
           </form>
 

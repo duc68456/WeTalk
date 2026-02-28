@@ -32,7 +32,8 @@ router.post('/register', async (req, res, next) => {
       user: {
         id: newUser.id,
         email: newUser.email,
-        name: newUser.name
+        name: newUser.name,
+        avatarUrl: newUser.avatarUrl
       }
     });
   }
@@ -57,7 +58,8 @@ router.post('/login', async (req, res, next) => {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        avatarUrl: user.avatarUrl
       }
     });
   }

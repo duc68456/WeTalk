@@ -21,7 +21,8 @@ export default function ChatHeader({ name, initials, status, presence, showBack 
 
         <div className="chat-header-meta">
           <div className="chat-header-name">{name}</div>
-          <div className="chat-header-status">{status}</div>
+          {/* TEMP: hide user's activity status text */}
+          {/* <div className="chat-header-status">{status}</div> */}
         </div>
       </div>
 

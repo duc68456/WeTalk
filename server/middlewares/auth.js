@@ -5,7 +5,7 @@ import logger from '../utils/logger.js'
 const auth = async (req, res, next) => {
   // logger.info('req arrived auth middleware')
   const authHeader = req.header('Authorization');
-  // logger.info(authHeader)
+  // logger.info('authHeader: ', authHeader)
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: "Token missing or invalid format" });
