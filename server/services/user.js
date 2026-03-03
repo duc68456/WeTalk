@@ -54,19 +54,6 @@ const updateUser = async (userId, name) => {
   return user
 }
 
-const updateAvatar = async (userId, avatarUrl) => {
-  const user = await prisma.user.update({
-    where: {
-      id: userId
-    },
-    data: {
-      avatarUrl: avatarUrl
-    }
-  })
-
-  return user
-}
-
 const updateAvatarUser = async (avatarUrl, userId) => {
   const user = await prisma.user.update({
     where: {
@@ -84,6 +71,5 @@ export default {
   getUserById,
   searchUser,
   updateUser,
-  updateAvatar,
   updateAvatarUser
 }

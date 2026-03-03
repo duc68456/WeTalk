@@ -13,6 +13,12 @@ export default function ChatConversationList({
   activeId,
   onSelectConversation,
 }) {
+  const sortedConversations = conversations.sort((a, b) => {
+    if (a.time < b.time) return -1;
+    if (a.time > b.time) return 1;
+    return 0;
+  })
+
   return (
     <div className="chat-list">
       <header className="chat-list-header">
@@ -34,7 +40,8 @@ export default function ChatConversationList({
       </div>
 
       <div className="chat-list-items" role="list">
-        {conversations.map((c) => (
+        {/* {conversations.map((c) => ( */}
+        {sortedConversations.map((c) => (
           <ChatConversationItem
             key={c.id}
             conversation={c}

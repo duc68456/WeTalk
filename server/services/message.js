@@ -20,6 +20,15 @@ const postMessageToConversation = async (senderId, conversationId, content) => {
       content,
       messageType: 'TEXT',
       isDeleted: false
+    },
+    include: {
+      sender: {
+        select: {
+          id: true,
+          name: true,
+          avatarUrl: true
+        }
+      }
     }
   })
 
@@ -58,6 +67,15 @@ const getMessagesByConversationId = async (userId, conversationId, page, limit) 
     where: {
       conversationId: conversationId,
       isDeleted: false
+    },
+    include: {
+      sender: {
+        select: {
+          id: true,
+          name: true,
+          avatarUrl: true
+        }
+      }
     },
     orderBy: {
       createdAt: 'desc'

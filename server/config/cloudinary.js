@@ -11,10 +11,18 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'chat_app_avatars',
-    allowedFormats: ['jpeg', 'png', 'jpg'],
-    transformation: [{ width: 500, height: 500, crop: 'fill', gravity: 'face' }]
+  params: async (req, file) => {
+    const userId = req.user.userId;
+
+    return {
+      folder: 'chat_app_avatars',
+      public_id: `user_avatar_${userId}`,
+      allowed_formats: ['jpeg', 'png', 'jpg'], 
+      // transformation: [{ width: 500, height: 500, crop: 'fill', gravity: 'face' }],
+      transformation: [{ width: 500, height: 500, crop: 'fill' }],
+      overwrite: true,
+      invalidate: true 
+    };
   }
 });
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import axios from 'axios'
+// import axios from 'axios'
+import { createApiClient } from '../../utils/api.js'
 
 import '../../styles/components/chat/chatProfileSettingsPanel.css'
 
@@ -23,7 +24,8 @@ export default function ChatProfileSettingsPanel({ user, token, onUserUpdated })
   const fileInputRef = useRef(null)
   const fallbackAvatar =
     // avatarUrl ||
-    'http://localhost:3845/assets/5a016d0bcaa3b6f79f1e3a8c6b58e993c68e6d6f.png'
+    // 'http://localhost:3845/assets/5a016d0bcaa3b6f79f1e3a8c6b58e993c68e6d6f.png'
+    'https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg'
 
   const computedAvatarSrc = avatarPreviewUrl || user?.avatarUrl || fallbackAvatar
   const [avatarImgSrc, setAvatarImgSrc] = useState(computedAvatarSrc)
@@ -73,14 +75,17 @@ export default function ChatProfileSettingsPanel({ user, token, onUserUpdated })
       const formData = new FormData()
       formData.append('avatar', file)
 
-      const res = await axios.patch(`${API_BASE_URL}/api/user/update-avatar`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
+      // const res = await axios.patch(`${API_BASE_URL}/api/user/update-avatar`, formData, {
+      //   headers: {
+      //     Authorization: `Bearer ${token}`
+      //   }
+      // })
+      const api = createApiClient(token)
+      const res = await api.patch('/api/user/update-avatar', formData)
 
       const updatedUser = res?.data?.user
       if (updatedUser) {
+        if (updatedUser.avatarUrl) setAvatarImgSrc(updatedUser.avatarUrl)
         onUserUpdated?.(updatedUser)
         setSubmitSuccess('Avatar updated')
       }
@@ -108,17 +113,21 @@ export default function ChatProfileSettingsPanel({ user, token, onUserUpdated })
 
     try {
       setIsSaving(true)
-      const res = await axios.patch(
-        `${API_BASE_URL}/api/user/update-profile`,
-        {
-          name: nextName
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      )
+      // const res = await axios.patch(
+      //   `${API_BASE_URL}/api/user/update-profile`,
+      //   {
+      //     name: nextName
+      //   },
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${token}`
+      //     }
+      //   }
+      // )
+      const api = createApiClient(token)
+      const res = await api.patch('/api/user/update-profile', {
+        name: nextName
+      })
 
       const updatedName = res?.data?.name ?? nextName
       setDisplayName(updatedName)

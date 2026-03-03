@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createApiClient } from '../utils/api.js'
 
 import '../styles/pages/chat.css'
 
@@ -13,7 +14,15 @@ import ChatProfileSettingsPanel from '../components/chat/ChatProfileSettingsPane
 export default function Chat({ onLogout, user, token, onUserUpdated }) {
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState('')
-  const [activeConversationId, setActiveConversationId] = useState('sarah')
+  const [activeConversationId, setActiveConversationId] = useState(null)
+
+  const [messages, setMessages] = useState([])
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false)
+  const [messageLoadError, setMessageLoadError] = useState('')
+
+  const [conversations, setConversations] = useState([])
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false)
+  const [conversationLoadError, setConversationLoadError] = useState('')
 
   const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false)
 
@@ -29,115 +38,186 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
     const max = 520
     return Math.max(min, Math.min(max, w))
   }
-  // console.log('token in Chat: ', token)
-  const conversations = useMemo(
-    () => [
-      {
-        id: 'sarah',
-        name: 'Nguyễn Văn Ấn',
-        initials: 'SC',
-        time: '2m',
-        preview: 'Sounds good! See you then.',
-        unread: 2,
-        status: 'online',
-      },
-      {
-        id: 'eng',
-        name: 'Engineering Team',
-        initials: 'ET',
-        time: '15m',
-        preview: 'Deploy is scheduled for 3pm',
-        unread: 5,
-        status: 'online',
-      },
-      {
-        id: 'marcus',
-        name: 'Marcus Johnson',
-        initials: 'MJ',
-        time: '1h',
-        preview: "I'll review the PR tomorrow",
-        unread: 0,
-        status: 'away',
-        active: true,
-      },
-      {
-        id: 'design',
-        name: 'Product Design',
-        initials: 'PD',
-        time: '2h',
-        preview: 'New mockups are ready',
-        unread: 0,
-        status: 'online',
-      },
-      {
-        id: 'emma',
-        name: 'Emma Williams',
-        initials: 'EW',
-        time: '3h',
-        preview: 'Thanks for your help!',
-        unread: 0,
-        status: 'offline',
-      },
-      {
-        id: 'general',
-        name: 'General',
-        initials: 'GN',
-        time: '1d',
-        preview: 'Welcome to the team!',
-        unread: 0,
-        status: 'online',
-      },
-    ],
-    []
-  )
+  const initialsFromName = (name = '') => {
+    const parts = String(name)
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+    if (parts.length === 0) return '??'
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  }
+
+  const formatRelativeTime = (dateLike) => {
+    if (!dateLike) return ''
+    const ts = new Date(dateLike).getTime()
+    if (Number.isNaN(ts)) return ''
+
+    const diffMs = Date.now() - ts
+    const minutes = Math.floor(diffMs / 60000)
+    if (minutes < 1) return 'now'
+    if (minutes < 60) return `${minutes}m`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h`
+    const days = Math.floor(hours / 24)
+    return `${days}d`
+  }
+
+  const mapBackendConversation = (row) => {
+    // Backend shape: { conversation: { id,type,name,createdAt,members:[{user:{name,avatarUrl}}], messages:[{text,createdAt,sender:{name}}] } }
+    const conv = row?.conversation
+    if (!conv?.id) return null
+
+    const partnerName = conv?.members?.[0]?.user?.name
+    const displayName = conv?.type === 'GROUP' ? conv?.name || 'Unnamed group' : partnerName || 'Unknown'
+    const lastMessage = conv?.messages?.[0]
+
+    const getLastMessagePreview = (m) => {
+      if (!m) return 'No messages yet'
+      if (typeof m?.content === 'string' && m.content.trim()) return m.content
+
+      // Non-text messages (IMAGE/FILE/SYSTEM) or empty content
+      const t = String(m?.messageType || '').toUpperCase()
+      if (t === 'IMAGE') return '📷 Image'
+      if (t === 'FILE') return '📎 File'
+      if (t === 'SYSTEM') return 'System message'
+      return 'New message'
+    }
+
+    return {
+      id: conv.id,
+      name: displayName,
+      initials: initialsFromName(displayName),
+      time: formatRelativeTime(lastMessage?.createdAt || conv?.createdAt),
+      preview: getLastMessagePreview(lastMessage),
+      unread: 0,
+      status: 'offline'
+    }
+  }
+
+  useEffect(() => {
+    let isMounted = true
+
+    const load = async () => {
+      if (!token) {
+        setConversations([])
+        setActiveConversationId(null)
+        return
+      }
+
+      try {
+        setIsLoadingConversations(true)
+        setConversationLoadError('')
+
+        const api = createApiClient(token)
+        const res = await api.get('/api/conversation/myConversation')
+        const rows = Array.isArray(res?.data) ? res.data : []
+        const mapped = rows.map(mapBackendConversation).filter(Boolean)
+
+        if (!isMounted) return
+        setConversations(mapped)
+
+        // Pick a default active conversation if none is selected.
+        setActiveConversationId((prev) => {
+          if (prev && mapped.some((c) => c.id === prev)) return prev
+          return mapped[0]?.id ?? null
+        })
+      } catch (err) {
+        if (!isMounted) return
+        const message =
+          (typeof err?.response?.data?.message === 'string' && err.response.data.message) ||
+          err?.message ||
+          'Failed to load conversations'
+        setConversationLoadError(message)
+        setConversations([])
+        setActiveConversationId(null)
+      } finally {
+        if (isMounted) setIsLoadingConversations(false)
+      }
+    }
+
+    load()
+    return () => {
+      isMounted = false
+    }
+  }, [token])
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId) ?? conversations[0]
 
-  const messages = useMemo(
-    () => [
-      {
-        id: 'm1',
-        from: 'them',
-        author: 'Sarah Chen',
-        initials: 'SC',
-        text: 'Hey! Did you get a chance to review the design mockups I sent over?',
-        time: '10:32 AM',
-      },
-      {
-        id: 'm2',
-        from: 'me',
-        author: 'You',
-        initials: 'YO',
-        text: 'Yes! They look great. I have a few suggestions for the navigation flow.',
-        time: '10:35 AM',
-      },
-      {
-        id: 'm3',
-        from: 'them',
-        author: 'Sarah Chen',
-        initials: 'SC',
-        text: "Perfect! I'd love to hear your thoughts. Should we schedule a quick call to discuss?",
-        time: '10:36 AM',
-      },
-      {
-        id: 'm4',
-        from: 'me',
-        author: 'You',
-        initials: 'YO',
-        text: 'That works for me. How about tomorrow at 2pm?',
-        time: '10:38 AM',
-      },
-      {
-        id: 'm5',
-        from: 'them',
-        author: 'Sarah Chen',
-        initials: 'SC',
-        text: 'Sounds good! See you then.',
-        time: '10:40 AM',
-      },
-    ],
-    []
-  )
+  const formatTime = (dateLike) => {
+    if (!dateLike) return ''
+    const d = new Date(dateLike)
+    if (Number.isNaN(d.getTime())) return ''
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
+  const mapBackendMessage = (m) => {
+    if (!m?.id) return null
+    const isMe = m.senderId === user?.id
+    const authorName = isMe ? 'You' : m?.sender?.name || 'Unknown'
+    const initials = initialsFromName(isMe ? user?.name || 'You' : authorName)
+
+    const avatarUrl =
+      (isMe ? user?.avatarUrl : m?.sender?.avatarUrl) ||
+      'https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg'
+
+    return {
+      id: m.id,
+      from: isMe ? 'me' : 'them',
+      author: authorName,
+      initials,
+      avatarUrl,
+      text: m.content || '',
+      time: formatTime(m.createdAt)
+    }
+  }
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadMessages = async () => {
+      if (!token || !activeConversationId) {
+        setMessages([])
+        setMessageLoadError('')
+        return
+      }
+
+      try {
+        setIsLoadingMessages(true)
+        setMessageLoadError('')
+
+        const api = createApiClient(token)
+        const res = await api.get(`/api/message/${activeConversationId}`)
+        const rows = res?.data?.messages?.data
+        const list = Array.isArray(rows) ? rows : []
+
+        // Backend returns newest-first; UI expects oldest-first
+        const mapped = list
+          .slice()
+          .reverse()
+          .map(mapBackendMessage)
+          .filter(Boolean)
+
+        if (!isMounted) return
+        setMessages(mapped)
+      } catch (err) {
+        if (!isMounted) return
+        const message =
+          (typeof err?.response?.data?.message === 'string' && err.response.data.message) ||
+          err?.message ||
+          'Failed to load messages'
+        setMessageLoadError(message)
+        setMessages([])
+      } finally {
+        if (isMounted) setIsLoadingMessages(false)
+      }
+    }
+
+    loadMessages()
+    return () => {
+      isMounted = false
+    }
+  }, [token, activeConversationId, user?.id])
 
   const filteredConversations = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -145,11 +225,29 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
     return conversations.filter((c) => c.name.toLowerCase().includes(q) || c.preview.toLowerCase().includes(q))
   }, [conversations, search])
 
-  const onSend = () => {
-    if (!message.trim()) return
-    // placeholder for now
-    console.log('Send message', { to: activeConversationId, message })
+  const onSend = async () => {
+    const content = message.trim()
+    if (!content || !activeConversationId || !token) return
+
     setMessage('')
+
+    try {
+      const api = createApiClient(token)
+      const res = await api.post('/api/message', {
+        conversationId: activeConversationId,
+        content
+      })
+
+      const created = res?.data?.newMessage
+      const mapped = mapBackendMessage(created)
+      if (mapped) {
+        setMessages((prev) => [...prev, mapped])
+      }
+    } catch (err) {
+      // Restore input so the user doesn't lose their message
+      setMessage(content)
+      console.error('Failed to send message', err)
+    }
   }
 
   useEffect(() => {
@@ -200,9 +298,48 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
               title="Messages"
               search={search}
               onSearchChange={setSearch}
-              conversations={filteredConversations}
-              activeId={activeConversationId}
+              conversations={
+                isLoadingConversations
+                  ? [
+                      {
+                        id: 'loading',
+                        name: 'Loading…',
+                        initials: '…',
+                        time: '',
+                        preview: 'Fetching your conversations',
+                        unread: 0,
+                        status: 'offline'
+                      }
+                    ]
+                  : conversationLoadError
+                    ? [
+                        {
+                          id: 'error',
+                          name: 'Couldn\'t load conversations',
+                          initials: '!',
+                          time: '',
+                          preview: conversationLoadError,
+                          unread: 0,
+                          status: 'offline'
+                        }
+                      ]
+                    : filteredConversations.length
+                      ? filteredConversations
+                      : [
+                          {
+                            id: 'empty',
+                            name: 'No conversations yet',
+                            initials: '—',
+                            time: '',
+                            preview: 'Start a new chat to see it here',
+                            unread: 0,
+                            status: 'offline'
+                          }
+                        ]
+              }
+              activeId={isLoadingConversations || conversationLoadError ? null : activeConversationId}
               onSelectConversation={(id) => {
+                if (id === 'loading' || id === 'error' || id === 'empty') return
                 setActiveConversationId(id)
                 if (isNarrowLandscape) setNarrowView('thread')
               }}
@@ -233,7 +370,33 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
               onBack={() => setNarrowView('list')}
             />
 
-            <ChatMessageList messages={messages} />
+            <ChatMessageList
+              messages={
+                isLoadingMessages
+                  ? [
+                      {
+                        id: 'loading',
+                        from: 'them',
+                        author: '',
+                        initials: '…',
+                        text: 'Loading messages…',
+                        time: ''
+                      }
+                    ]
+                  : messageLoadError
+                    ? [
+                        {
+                          id: 'error',
+                          from: 'them',
+                          author: '',
+                          initials: '!',
+                          text: messageLoadError,
+                          time: ''
+                        }
+                      ]
+                    : messages
+              }
+            />
 
             <ChatComposer value={message} onChange={setMessage} onSend={onSend} />
           </section>

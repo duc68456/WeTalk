@@ -25,7 +25,7 @@ const getMyConversation = async (userId) => {
               select: {
                 // userId,
                 user: {
-                  select: { id: true, name: true }
+                  select: { id: true, name: true, avatarUrl: true }
                 }
               }
             },
