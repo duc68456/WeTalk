@@ -5,6 +5,7 @@ import { ConversationType } from '@prisma/client';
 import logger from '../utils/logger.js'
 
 import conversationService from '../services/conversation.js'
+import { uploadConversationAvatar } from '../config/cloudinary.js'
 
 // const ConversationTypeEnum = zod.enum(["DIRECT", "GROUP"]);
 
@@ -129,6 +130,47 @@ router.get('/:conversationId', async (req, res, next) => {
   }
   catch (error) {
     logger.error('error: ', error)
+    next(error)
+  }
+})
+
+router.patch('/:conversationId/update-avatar', uploadConversationAvatar.single('avatar'), async (req, res, next) => {
+  try {
+    const { conversationId } = req.params
+    const requesterId = req.user.userId
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'There is no image file' })
+    }
+
+    const avatarUrl = req.file.path
+    const updatedConversation = await conversationService.updateGroupAvatar(conversationId, requesterId, avatarUrl)
+
+    return res.status(200).json({
+      message: 'Conversation avatar updated successfully',
+      conversation: updatedConversation
+    })
+  } catch (error) {
+    // Map domain errors to user-friendly HTTP responses.
+    const code = error?.message
+
+    if (code === 'NOT_FOUND') {
+      return res.status(404).json({ message: 'Conversation not found' })
+    }
+
+    if (code === 'NOT_GROUP') {
+      return res.status(400).json({ message: 'This conversation is not a group chat' })
+    }
+
+    if (code === 'NOT_ALLOWED') {
+      return res.status(403).json({ message: 'You are not allowed to update this group avatar' })
+    }
+
+    if (code === 'ONLY_ADMIN_CAN_UPDATE_GROUP') {
+      return res.status(403).json({ message: 'Only group admins can update the group avatar' })
+    }
+
+    logger.error(error)
     next(error)
   }
 })

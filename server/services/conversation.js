@@ -15,6 +15,7 @@ const getMyConversation = async (userId) => {
             id: true,
             type: true,
             name: true,
+             avatarUrl: true,
             createdAt: true,
             members: {
               where: {
@@ -22,6 +23,7 @@ const getMyConversation = async (userId) => {
                   not: userId
                 }
               },
+              take: 4,
               select: {
                 // userId,
                 user: {
@@ -184,9 +186,45 @@ const deleteConversation = async (conversationId, requesterId) => {
   return deletedConversation;
 }
 
+const updateGroupAvatar = async (conversationId, requesterId, avatarUrl) => {
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    include: {
+      members: {
+        where: { userId: requesterId }
+      }
+    }
+  })
+
+  if (!conversation || conversation.deletedAt) {
+    throw new Error('NOT_FOUND')
+  }
+
+  if (conversation.type !== 'GROUP') {
+    throw new Error('NOT_GROUP')
+  }
+
+  if (!conversation.members.length || conversation.members[0].status !== 'ACTIVE') {
+    throw new Error('NOT_ALLOWED')
+  }
+
+  // Optional: only allow ADMIN to change group avatar.
+  if (conversation.members[0].role !== 'ADMIN') {
+    throw new Error('ONLY_ADMIN_CAN_UPDATE_GROUP')
+  }
+
+  const updated = await prisma.conversation.update({
+    where: { id: conversationId },
+    data: { avatarUrl }
+  })
+
+  return updated
+}
+
 export default {
   getMyConversation,
   getConversationById,
   createConversation,
-  deleteConversation
+  deleteConversation,
+  updateGroupAvatar
 }

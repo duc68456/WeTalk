@@ -1,9 +1,10 @@
 import '../../styles/components/chat/chatConversationItem.css'
 
 import ChatAvatar from './ChatAvatar.jsx'
+import ChatAvatarStack from './ChatAvatarStack.jsx'
 
 export default function ChatConversationItem({ conversation, active, onClick }) {
-  const { name, initials, time, preview, unread = 0, status } = conversation
+  const { name, initials, time, preview, unread = 0, status, avatarUrl, type, memberAvatars } = conversation
 
   return (
     <button
@@ -12,7 +13,11 @@ export default function ChatConversationItem({ conversation, active, onClick }) 
       onClick={onClick}
       role="listitem"
     >
-      <ChatAvatar initials={initials} presence={status} size="md" />
+      {type === 'GROUP' && !avatarUrl ? (
+        <ChatAvatarStack avatars={memberAvatars} initials={initials} size="md" />
+      ) : (
+        <ChatAvatar initials={initials} src={avatarUrl} presence={status} size="md" />
+      )}
 
       <div className="chat-convo-body">
         <div className="chat-convo-top">

@@ -13,10 +13,10 @@ export default function ChatConversationList({
   activeId,
   onSelectConversation,
 }) {
-  const sortedConversations = conversations.sort((a, b) => {
-    if (a.time < b.time) return -1;
-    if (a.time > b.time) return 1;
-    return 0;
+  const sortedConversations = [...conversations].sort((a, b) => {
+    const at = typeof a?.sortTs === 'number' ? a.sortTs : 0
+    const bt = typeof b?.sortTs === 'number' ? b.sortTs : 0
+    return bt - at
   })
 
   return (

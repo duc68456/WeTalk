@@ -28,4 +28,24 @@ const storage = new CloudinaryStorage({
 
 const uploadCloud = multer({ storage });
 
+const conversationAvatarStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    const conversationId = req.params.conversationId || req.body?.conversationId || 'unknown_conversation';
+
+    return {
+      folder: 'chat_app_conversation_avatars',
+      public_id: `conversation_avatar_${conversationId}`,
+      allowed_formats: ['jpeg', 'png', 'jpg'],
+      transformation: [{ width: 500, height: 500, crop: 'fill' }],
+      overwrite: true,
+      invalidate: true
+    };
+  }
+});
+
+const uploadConversationAvatar = multer({ storage: conversationAvatarStorage });
+
+export { uploadConversationAvatar };
+
 export default uploadCloud;

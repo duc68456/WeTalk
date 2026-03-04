@@ -18,7 +18,20 @@ const getMembersByConversationId = async (conversationId) => {
   const members = await prisma.member.findMany({
     where: {
       conversationId: conversationId
-    }
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          avatarUrl: true
+        }
+      }
+    },
+    orderBy: [
+      { role: 'asc' },
+      { createdAt: 'asc' }
+    ]
   })
 
   return members

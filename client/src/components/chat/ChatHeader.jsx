@@ -1,6 +1,7 @@
 import '../../styles/components/chat/chatHeader.css'
 
 import ChatAvatar from './ChatAvatar.jsx'
+import ChatAvatarStack from './ChatAvatarStack.jsx'
 
 import aiIcon from '../../assets/icons/chat/ai.svg'
 import backIcon from '../../assets/icons/chat/back.svg'
@@ -8,7 +9,18 @@ import videoIcon from '../../assets/icons/chat/video.svg'
 import phoneIcon from '../../assets/icons/chat/phone.svg'
 import moreIcon from '../../assets/icons/chat/more.svg'
 
-export default function ChatHeader({ name, initials, status, presence, showBack = false, onBack }) {
+export default function ChatHeader({
+  name,
+  initials,
+  avatarSrc,
+  conversationType,
+  memberAvatars = [],
+  status,
+  presence,
+  showBack = false,
+  onBack,
+  onMore
+}) {
   return (
     <header className="chat-header">
       <div className="chat-header-left">
@@ -17,7 +29,11 @@ export default function ChatHeader({ name, initials, status, presence, showBack 
             <img src={backIcon} alt="" />
           </button>
         ) : null}
-        <ChatAvatar initials={initials} presence={presence} size="lg" />
+        {conversationType === 'GROUP' && !avatarSrc ? (
+          <ChatAvatarStack avatars={memberAvatars} initials={initials} size="lg" />
+        ) : (
+          <ChatAvatar initials={initials} src={avatarSrc} presence={presence} size="lg" />
+        )}
 
         <div className="chat-header-meta">
           <div className="chat-header-name">{name}</div>
@@ -38,7 +54,7 @@ export default function ChatHeader({ name, initials, status, presence, showBack 
         <button className="chat-header-icon" type="button" aria-label="Audio call">
           <img src={phoneIcon} alt="" />
         </button>
-        <button className="chat-header-icon chat-header-icon--ghost" type="button" aria-label="More">
+        <button className="chat-header-icon chat-header-icon--ghost" type="button" aria-label="More" onClick={onMore}>
           <img src={moreIcon} alt="" />
         </button>
       </div>

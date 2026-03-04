@@ -1,0 +1,42 @@
+.chat-avatarStack {
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 2px;
+}
+
+/* Container sizes roughly match ChatAvatar circle sizes */
+.chat-avatarStack--sm {
+  width: 32px;
+  height: 32px;
+}
+
+.chat-avatarStack--md {
+  width: 44px;
+  height: 44px;
+}
+
+.chat-avatarStack--lg {
+  width: 44px;
+  height: 44px;
+}
+
+.chat-avatarStack-cell {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+/* Force the embedded avatars to fully fit into each quadrant */
+.chat-avatarStack-cell .chat-avatar-circle {
+  width: 100% !important;
+  height: 100% !important;
+  border-width: 1px;
+}
+
+.chat-avatarStack-cell .chat-avatar-circle img {
+  border-radius: 999px;
+}

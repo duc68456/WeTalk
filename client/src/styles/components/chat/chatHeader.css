@@ -73,6 +73,36 @@
   gap: 8px;
 }
 
+.chat-header-pill {
+  height: 40px;
+  border-radius: 14px;
+  border: 0.8px solid #e5e7eb;
+  background: #ffffff;
+  cursor: pointer;
+  padding: 0 14px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: #111827;
+  transition:
+    background var(--t-med) var(--ease-out),
+    box-shadow var(--t-med) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+
+.chat-header-pill:hover {
+  background: rgba(17, 24, 39, 0.03);
+}
+
+.chat-header-pill:active {
+  transform: translateY(0.5px);
+}
+
+.chat-header-pill:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 .chat-header-ai {
   height: 36px;
   width: 134px;

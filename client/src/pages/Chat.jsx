@@ -10,6 +10,8 @@ import ChatMessageList from '../components/chat/ChatMessageList.jsx'
 import ChatComposer from '../components/chat/ChatComposer.jsx'
 import ChatResizeHandle from '../components/chat/ChatResizeHandle.jsx'
 import ChatProfileSettingsPanel from '../components/chat/ChatProfileSettingsPanel.jsx'
+import ChatContactInfoDock from '../components/chat/ChatContactInfoDock.jsx'
+import ChatMembersDock from '../components/chat/ChatMembersDock.jsx'
 
 export default function Chat({ onLogout, user, token, onUserUpdated }) {
   const [search, setSearch] = useState('')
@@ -25,6 +27,16 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
   const [conversationLoadError, setConversationLoadError] = useState('')
 
   const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false)
+  const [isContactInfoOpen, setIsContactInfoOpen] = useState(false)
+  const [isMembersOpen, setIsMembersOpen] = useState(false)
+  const [isUploadingGroupAvatar, setIsUploadingGroupAvatar] = useState(false)
+  const [groupAvatarError, setGroupAvatarError] = useState('')
+
+  const [membersState, setMembersState] = useState({
+    isLoading: false,
+    error: '',
+    members: []
+  })
 
   const [isNarrowLandscape, setIsNarrowLandscape] = useState(false)
   const [narrowView, setNarrowView] = useState('thread')
@@ -33,7 +45,6 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
   const dragStart = useRef({ x: 0, width: 340 })
 
   const clampListWidth = (w) => {
-    // Keep it usable across typical desktop widths.
     const min = 280
     const max = 520
     return Math.max(min, Math.min(max, w))
@@ -64,7 +75,6 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
   }
 
   const mapBackendConversation = (row) => {
-    // Backend shape: { conversation: { id,type,name,createdAt,members:[{user:{name,avatarUrl}}], messages:[{text,createdAt,sender:{name}}] } }
     const conv = row?.conversation
     if (!conv?.id) return null
 
@@ -86,10 +96,21 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
 
     return {
       id: conv.id,
+      type: conv.type,
       name: displayName,
       initials: initialsFromName(displayName),
       time: formatRelativeTime(lastMessage?.createdAt || conv?.createdAt),
+      sortTs: new Date(lastMessage?.createdAt || conv?.createdAt || 0).getTime() || 0,
       preview: getLastMessagePreview(lastMessage),
+      avatarUrl: conv?.type === 'GROUP' ? conv?.avatarUrl || null : conv?.members?.[0]?.user?.avatarUrl || null,
+      memberAvatars:
+        conv?.type === 'GROUP'
+          ? (conv?.members || []).slice(0, 4).map((m) => ({
+              id: m?.user?.id,
+              src: m?.user?.avatarUrl || null,
+              initials: initialsFromName(m?.user?.name || '??')
+            }))
+          : [],
       unread: 0,
       status: 'offline'
     }
@@ -117,7 +138,6 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
         if (!isMounted) return
         setConversations(mapped)
 
-        // Pick a default active conversation if none is selected.
         setActiveConversationId((prev) => {
           if (prev && mapped.some((c) => c.id === prev)) return prev
           return mapped[0]?.id ?? null
@@ -144,6 +164,76 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId) ?? conversations[0]
 
+  useEffect(() => {
+    // If user switches away from a group convo, close the members dock.
+    if (activeConversation?.type !== 'GROUP') {
+      setIsMembersOpen(false)
+    }
+  }, [activeConversation?.type, activeConversationId])
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadMembers = async () => {
+      if (!isMembersOpen || !token || !activeConversationId || activeConversation?.type !== 'GROUP') return
+
+      try {
+        setMembersState((s) => ({ ...s, isLoading: true, error: '' }))
+        const api = createApiClient(token)
+        const res = await api.get('/api/member', {
+          params: { conversationId: activeConversationId }
+        })
+
+        const list = Array.isArray(res?.data?.members) ? res.data.members : []
+        if (!isMounted) return
+        setMembersState({ isLoading: false, error: '', members: list })
+      } catch (err) {
+        if (!isMounted) return
+        const message =
+          (typeof err?.response?.data?.message === 'string' && err.response.data.message) ||
+          err?.message ||
+          'Failed to load members'
+        setMembersState((s) => ({ ...s, isLoading: false, error: message }))
+      }
+    }
+
+    loadMembers()
+    return () => {
+      isMounted = false
+    }
+  }, [isMembersOpen, token, activeConversationId, activeConversation?.type])
+
+  const contactInfo = useMemo(() => {
+    if (!activeConversation) return null
+    return {
+      name: activeConversation.name,
+      // Placeholder until presence/status is wired from backend.
+      status: 'Active now',
+      avatarUrl: activeConversation.avatarUrl || null
+    }
+  }, [activeConversation])
+
+  const contactSharedMedia = useMemo(
+    () => [
+      { id: 'm1', url: 'http://localhost:3845/assets/e4100fe222169fdb1349aa0cf87b8023dfeaba8b.png' },
+      { id: 'm2', url: 'http://localhost:3845/assets/84795127fa87865ff0bfebf43dd403d28b940055.png' },
+      { id: 'm3', url: 'http://localhost:3845/assets/adddde33ccee3fb42419b2620f75654465b78943.png' },
+      { id: 'm4', url: 'http://localhost:3845/assets/11e00a90904a510f32ffc2e92e19316ac9026837.png' },
+      { id: 'm5', url: 'http://localhost:3845/assets/b4d228395af3fef6f50b9a8f175cb421f8f22259.png' },
+      { id: 'm6', url: 'http://localhost:3845/assets/15d2d5e8a126227036800e8c615dbda6dd0aaf62.png' }
+    ],
+    []
+  )
+
+  const contactCallLogs = useMemo(
+    () => [
+      { id: 'c1', title: 'Video Call', when: 'Today at 2:30 PM', duration: '45 min' },
+      { id: 'c2', title: 'Video Call', when: 'Yesterday at 10:15 AM', duration: '22 min' },
+      { id: 'c3', title: 'Video Call', when: 'Mar 1, 2026 at 4:00 PM', duration: '1 hr 5 min' }
+    ],
+    []
+  )
+
   const formatTime = (dateLike) => {
     if (!dateLike) return ''
     const d = new Date(dateLike)
@@ -168,6 +258,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
       initials,
       avatarUrl,
       text: m.content || '',
+      createdAt: m.createdAt,
       time: formatTime(m.createdAt)
     }
   }
@@ -364,10 +455,14 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
             <ChatHeader
               name={activeConversation?.name}
               initials={activeConversation?.initials}
+              avatarSrc={activeConversation?.avatarUrl}
+              conversationType={activeConversation?.type}
+              memberAvatars={activeConversation?.memberAvatars}
               status="Active now"
               presence={activeConversation?.status}
               showBack={isNarrowLandscape}
               onBack={() => setNarrowView('list')}
+              onMore={() => setIsContactInfoOpen((v) => !v)}
             />
 
             <ChatMessageList
@@ -400,6 +495,82 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
 
             <ChatComposer value={message} onChange={setMessage} onSend={onSend} />
           </section>
+        )}
+
+        {!isProfileSettingsOpen && !isNarrowLandscape && (
+          <ChatContactInfoDock
+            isOpen={isContactInfoOpen}
+            onClose={() => setIsContactInfoOpen(false)}
+            contact={contactInfo}
+            membersCount={
+              typeof activeConversation?.type === 'string' && activeConversation?.type === 'GROUP'
+                ? (membersState.members?.length || activeConversation?.memberAvatars?.length || 0)
+                : undefined
+            }
+            memberPreviewAvatars={activeConversation?.memberAvatars}
+            onViewAllMembers={() => {
+              if (activeConversation?.type !== 'GROUP') return
+              setIsContactInfoOpen(false)
+              setIsMembersOpen(true)
+            }}
+            allowEditAvatar={activeConversation?.id && activeConversation?.type === 'GROUP'}
+            isUploadingAvatar={isUploadingGroupAvatar}
+            onAvatarSelected={async (file) => {
+              try {
+                if (!token || !activeConversationId) return
+                setGroupAvatarError('')
+                setIsUploadingGroupAvatar(true)
+
+                const api = createApiClient(token)
+                const formData = new FormData()
+                formData.append('avatar', file)
+
+                const res = await api.patch(`/api/conversation/${activeConversationId}/update-avatar`, formData)
+                const updated = res?.data?.conversation
+                const nextAvatarUrl = updated?.avatarUrl
+
+                if (nextAvatarUrl) {
+                  setConversations((prev) =>
+                    prev.map((c) => (c.id === activeConversationId ? { ...c, avatarUrl: nextAvatarUrl } : c))
+                  )
+                } else {
+                  setGroupAvatarError('Upload succeeded but no avatar URL was returned.')
+                }
+              } catch (err) {
+                const msg =
+                  err?.response?.data?.message ||
+                  err?.message ||
+                  'Failed to update group avatar'
+                setGroupAvatarError(msg)
+                console.error('Failed to update group avatar', err)
+              } finally {
+                setIsUploadingGroupAvatar(false)
+              }
+            }}
+            errorMessage={groupAvatarError}
+            sharedMedia={contactSharedMedia}
+            callLogs={contactCallLogs}
+            onBlock={() => {
+              // TODO: wire to backend when endpoint exists
+              console.log('Block user')
+            }}
+          />
+        )}
+
+        {!isProfileSettingsOpen && !isNarrowLandscape && (
+          <ChatMembersDock
+            isOpen={isMembersOpen && activeConversation?.type === 'GROUP'}
+            onClose={() => setIsMembersOpen(false)}
+            onBack={() => {
+              setIsMembersOpen(false)
+              setIsContactInfoOpen(true)
+            }}
+            membersState={membersState}
+            onMemberAction={(member) => {
+              // Placeholder for future: promote/demote/kick/etc.
+              console.log('Member action clicked', member)
+            }}
+          />
         )}
 
         {/* Profile Settings panel (UI-only). In narrow mode, it becomes its own view. */}
