@@ -13,7 +13,19 @@ import ChatProfileSettingsPanel from '../components/chat/ChatProfileSettingsPane
 import ChatContactInfoDock from '../components/chat/ChatContactInfoDock.jsx'
 import ChatMembersDock from '../components/chat/ChatMembersDock.jsx'
 
+import { useSocket } from '../components/utils/SocketContext.jsx'
+
+import emptyStateIcon from '../assets/icons/common/wetalk-mark.svg'
+
+// const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+
 export default function Chat({ onLogout, user, token, onUserUpdated }) {
+  const socket = useSocket()
+  const messagesEndRef = useRef(null)
+  const messageListRef = useRef(null)
+  const lastNonGuardCountRef = useRef(0)
+  const suppressAutoScrollRef = useRef(false)
+  const [isNearBottom, setIsNearBottom] = useState(true)
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState('')
   const [activeConversationId, setActiveConversationId] = useState(null)
@@ -21,6 +33,9 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
   const [messages, setMessages] = useState([])
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [messageLoadError, setMessageLoadError] = useState('')
+  const [messagePage, setMessagePage] = useState(1)
+  const [hasMoreMessages, setHasMoreMessages] = useState(true)
+  const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false)
 
   const [conversations, setConversations] = useState([])
   const [isLoadingConversations, setIsLoadingConversations] = useState(false)
@@ -140,7 +155,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
 
         setActiveConversationId((prev) => {
           if (prev && mapped.some((c) => c.id === prev)) return prev
-          return mapped[0]?.id ?? null
+          return null
         })
       } catch (err) {
         if (!isMounted) return
@@ -162,7 +177,108 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
     }
   }, [token])
 
-  const activeConversation = conversations.find((c) => c.id === activeConversationId) ?? conversations[0]
+  // Socket is provided via SocketProvider/SocketContext.
+  // Join all conversation rooms whenever the list changes.
+  useEffect(() => {
+    if (!socket) return
+    if (!conversations.length) return
+
+    for (const conv of conversations) {
+      socket.emit('join_room', conv.id)
+    }
+  }, [socket, conversations])
+
+  // Bind 'new_message' once per socket instance.
+  useEffect(() => {
+    if (!socket) return
+
+    const onNewMessage = (newMessage) => {
+      // Don't echo messages we just sent ourselves.
+      // We already append the created message locally in `onSend()`.
+      if (newMessage?.senderId && user?.id && newMessage.senderId === user.id) {
+        return
+      }
+
+      // newMessage is the backend Message object emitted by the server.
+      // It should include conversationId, senderId, content, createdAt, and (optionally) sender.
+      const mapped = mapBackendMessage(newMessage)
+      if (!mapped) return
+
+      const convId = newMessage?.conversationId
+      if (convId && convId === activeConversationId) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === mapped.id)) return prev
+          return [...prev, mapped]
+        })
+      }
+
+      if (convId) {
+        setConversations((prev) =>
+          prev
+            .map((c) => {
+              if (c.id !== convId) return c
+              return {
+                ...c,
+                preview: mapped.text?.trim() ? mapped.text : 'New message',
+                time: formatRelativeTime(newMessage?.createdAt),
+                sortTs: new Date(newMessage?.createdAt || 0).getTime() || c.sortTs
+              }
+            })
+            .slice()
+            .sort((a, b) => (b.sortTs || 0) - (a.sortTs || 0))
+        )
+      }
+    }
+
+    socket.on('new_message', onNewMessage)
+    return () => {
+      socket.off('new_message', onNewMessage)
+    }
+  }, [socket, activeConversationId, user?.id])
+
+  const activeConversation = conversations.find((c) => c.id === activeConversationId) ?? null
+  const hasActiveConversation = Boolean(activeConversation?.id)
+
+  const scrollToNewestMessage = (behavior = 'auto') => {
+    const el = messagesEndRef.current
+    if (!el) return
+    // Use scrollIntoView so we don't need to know the scroll container.
+    el.scrollIntoView({ behavior, block: 'end' })
+  }
+
+  const computeIsNearBottom = () => {
+    const el = messageListRef.current
+    if (!el) return true
+    // How close (px) to the bottom counts as "near".
+    const threshold = 160
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight
+    return distance <= threshold
+  }
+
+  // Initialize near-bottom state when switching conversations.
+  useEffect(() => {
+    setIsNearBottom(true)
+  }, [activeConversationId])
+
+  // Auto-scroll to newest only when we append new messages (send/receive/initial load).
+  // Do NOT scroll when we prepend older messages from infinite scroll.
+  useEffect(() => {
+    if (!hasActiveConversation) return
+    if (isLoadingMessages || isLoadingMoreMessages) return
+    if (suppressAutoScrollRef.current) return
+
+    const nonGuardCount = messages.filter((m) => m && m.kind !== 'guard').length
+    const prevCount = lastNonGuardCountRef.current
+    lastNonGuardCountRef.current = nonGuardCount
+
+    // If message count increased, we likely appended (send/receive/first load).
+    // Only auto-scroll if the user is already near the bottom.
+    if (nonGuardCount <= prevCount) return
+    if (!computeIsNearBottom() && !isNearBottom) return
+
+    const id = window.requestAnimationFrame(() => scrollToNewestMessage('smooth'))
+    return () => window.cancelAnimationFrame(id)
+  }, [messages, hasActiveConversation, isLoadingMessages, isLoadingMoreMessages, activeConversationId])
 
   useEffect(() => {
     // If user switches away from a group convo, close the members dock.
@@ -263,6 +379,43 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
     }
   }
 
+  const formatGuardLabel = (dateLike) => {
+    const d = new Date(dateLike)
+    if (Number.isNaN(d.getTime())) return ''
+    // Example: "Mar 5, 2026 · 10:42"
+    const date = d.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })
+    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    return `${date} · ${time}`
+  }
+
+  const addTimeGuards = (msgList) => {
+    // Inserts compact time separators when day changes.
+    // We treat items with { kind: 'guard' } specially in the UI.
+    const out = []
+    let lastDayKey = null
+    for (const m of msgList) {
+      if (!m || typeof m !== 'object') continue
+      if (m.kind === 'guard') {
+        out.push(m)
+        lastDayKey = null
+        continue
+      }
+
+      const ts = m.createdAt ? new Date(m.createdAt) : null
+      const dayKey = ts && !Number.isNaN(ts.getTime()) ? ts.toDateString() : null
+      if (dayKey && dayKey !== lastDayKey) {
+        out.push({
+          kind: 'guard',
+          id: `guard-day-${dayKey}-${m.id}`,
+          label: ts.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })
+        })
+        lastDayKey = dayKey
+      }
+      out.push(m)
+    }
+    return out
+  }
+
   useEffect(() => {
     let isMounted = true
 
@@ -270,24 +423,39 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
       if (!token || !activeConversationId) {
         setMessages([])
         setMessageLoadError('')
+        setMessagePage(1)
+        setHasMoreMessages(true)
         return
       }
 
       try {
         setIsLoadingMessages(true)
         setMessageLoadError('')
+        setMessagePage(1)
+        setHasMoreMessages(true)
 
         const api = createApiClient(token)
-        const res = await api.get(`/api/message/${activeConversationId}`)
+        const res = await api.get(`/api/message/${activeConversationId}`, {
+          params: { page: 1, limit: 30 }
+        })
         const rows = res?.data?.messages?.data
         const list = Array.isArray(rows) ? rows : []
+        const pagination = res?.data?.messages?.pagination
+        const totalPages = Number(pagination?.totalPages)
+        if (!Number.isNaN(totalPages) && totalPages > 0) {
+          setHasMoreMessages(1 < totalPages)
+        } else {
+          setHasMoreMessages(list.length >= 30)
+        }
 
         // Backend returns newest-first; UI expects oldest-first
-        const mapped = list
-          .slice()
-          .reverse()
-          .map(mapBackendMessage)
-          .filter(Boolean)
+        const mapped = addTimeGuards(
+          list
+            .slice()
+            .reverse()
+            .map(mapBackendMessage)
+            .filter(Boolean)
+        )
 
         if (!isMounted) return
         setMessages(mapped)
@@ -309,6 +477,73 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
       isMounted = false
     }
   }, [token, activeConversationId, user?.id])
+
+  const loadMoreMessages = async () => {
+    if (!token || !activeConversationId) return
+    if (isLoadingMoreMessages || isLoadingMessages) return
+    if (!hasMoreMessages) return
+
+    // Prevent the scroll-to-bottom effect from firing while we prepend older messages.
+    suppressAutoScrollRef.current = true
+
+    const container = messageListRef.current
+    const prevScrollHeight = container?.scrollHeight ?? 0
+    const prevScrollTop = container?.scrollTop ?? 0
+
+    try {
+      setIsLoadingMoreMessages(true)
+      const nextPage = messagePage + 1
+
+      const api = createApiClient(token)
+      const res = await api.get(`/api/message/${activeConversationId}`, {
+        params: { page: nextPage, limit: 30 }
+      })
+
+      const rows = res?.data?.messages?.data
+      const list = Array.isArray(rows) ? rows : []
+      const pagination = res?.data?.messages?.pagination
+      const totalPages = Number(pagination?.totalPages)
+      const stillHasMore = !Number.isNaN(totalPages) ? nextPage < totalPages : list.length >= 30
+
+      // Incoming list is newest-first for that page; reverse to oldest-first
+      const mapped = list
+        .slice()
+        .reverse()
+        .map(mapBackendMessage)
+        .filter(Boolean)
+
+      setMessages((prev) => {
+        const existingIds = new Set(prev.filter((x) => x && x.kind !== 'guard').map((m) => m.id))
+        const uniqueMapped = mapped.filter((m) => !existingIds.has(m.id))
+
+        const next = [...uniqueMapped]
+        // remove existing day guards and re-add
+        const prevNoGuards = prev.filter((x) => x && x.kind !== 'guard')
+        return addTimeGuards([...next, ...prevNoGuards])
+      })
+
+      setMessagePage(nextPage)
+      setHasMoreMessages(stillHasMore)
+
+      // Preserve scroll position after prepending.
+      window.requestAnimationFrame(() => {
+        const el = messageListRef.current
+        if (!el) return
+        const nextScrollHeight = el.scrollHeight
+        const delta = nextScrollHeight - prevScrollHeight
+        el.scrollTop = prevScrollTop + delta
+
+        // Clear suppression only after we've restored the scroll position.
+        window.requestAnimationFrame(() => {
+          suppressAutoScrollRef.current = false
+        })
+      })
+    } catch (err) {
+      console.error('Failed to load more messages', err)
+    } finally {
+      setIsLoadingMoreMessages(false)
+    }
+  }
 
   const filteredConversations = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -334,6 +569,24 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
       if (mapped) {
         setMessages((prev) => [...prev, mapped])
       }
+
+      // Update conversation preview for sender immediately.
+      // (We ignore our own socket echo to avoid duplicate messages.)
+      const ts = new Date(created?.createdAt || Date.now()).getTime() || Date.now()
+      setConversations((prev) =>
+        prev
+          .map((c) => {
+            if (c.id !== activeConversationId) return c
+            return {
+              ...c,
+              preview: content,
+              time: formatRelativeTime(created?.createdAt || ts),
+              sortTs: ts
+            }
+          })
+          .slice()
+          .sort((a, b) => (b.sortTs || 0) - (a.sortTs || 0))
+      )
     } catch (err) {
       // Restore input so the user doesn't lose their message
       setMessage(content)
@@ -350,7 +603,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
       // In narrow mode, choose the correct visible view.
       // If settings is open, keep showing settings; otherwise default to thread.
       if (matches) {
-        setNarrowView(isProfileSettingsOpen ? 'settings' : 'thread')
+        setNarrowView(isProfileSettingsOpen ? 'settings' : 'list')
       }
     }
 
@@ -452,48 +705,82 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
 
         {!isProfileSettingsOpen && (!isNarrowLandscape || narrowView === 'thread') && (
           <section className="chat-panel chat-panel--thread">
-            <ChatHeader
-              name={activeConversation?.name}
-              initials={activeConversation?.initials}
-              avatarSrc={activeConversation?.avatarUrl}
-              conversationType={activeConversation?.type}
-              memberAvatars={activeConversation?.memberAvatars}
-              status="Active now"
-              presence={activeConversation?.status}
-              showBack={isNarrowLandscape}
-              onBack={() => setNarrowView('list')}
-              onMore={() => setIsContactInfoOpen((v) => !v)}
-            />
-
-            <ChatMessageList
-              messages={
-                isLoadingMessages
-                  ? [
-                      {
-                        id: 'loading',
-                        from: 'them',
-                        author: '',
-                        initials: '…',
-                        text: 'Loading messages…',
-                        time: ''
+            {hasActiveConversation ? (
+              <>
+                <ChatHeader
+                  name={activeConversation?.name}
+                  initials={activeConversation?.initials}
+                  avatarSrc={activeConversation?.avatarUrl}
+                  conversationType={activeConversation?.type}
+                  memberAvatars={activeConversation?.memberAvatars}
+                  status="Active now"
+                  presence={activeConversation?.status}
+                  showBack={isNarrowLandscape}
+                  onBack={() => setNarrowView('list')}
+                  onMore={() => {
+                    setIsContactInfoOpen((v) => {
+                      const next = !v
+                      if (isNarrowLandscape && next) {
+                        // In narrow/landscape, the contact info dock isn't shown.
+                        // Route to the conversation list instead.
+                        setNarrowView('list')
                       }
-                    ]
-                  : messageLoadError
-                    ? [
-                        {
-                          id: 'error',
-                          from: 'them',
-                          author: '',
-                          initials: '!',
-                          text: messageLoadError,
-                          time: ''
-                        }
-                      ]
-                    : messages
-              }
-            />
+                      return next
+                    })
+                  }}
+                />
 
-            <ChatComposer value={message} onChange={setMessage} onSend={onSend} />
+                <ChatMessageList
+                  messages={
+                    isLoadingMessages
+                      ? [
+                          {
+                            id: 'loading',
+                            from: 'them',
+                            author: '',
+                            initials: '…',
+                            text: 'Loading messages…',
+                            time: ''
+                          }
+                        ]
+                      : messageLoadError
+                        ? [
+                            {
+                              id: 'error',
+                              from: 'them',
+                              author: '',
+                              initials: '!',
+                              text: messageLoadError,
+                              time: ''
+                            }
+                          ]
+                        : messages
+                  }
+      endRef={messagesEndRef}
+      containerRef={messageListRef}
+      onReachTop={loadMoreMessages}
+                  isLoadingMore={isLoadingMoreMessages}
+                  hasMore={hasMoreMessages}
+                  onScrollChange={(el) => {
+                    const threshold = 160
+                    const distance = el.scrollHeight - el.scrollTop - el.clientHeight
+                    setIsNearBottom(distance <= threshold)
+                  }}
+                />
+
+                <ChatComposer value={message} onChange={setMessage} onSend={onSend} />
+              </>
+            ) : (
+              <div className="chat-empty-state" role="status" aria-live="polite">
+                <div className="chat-empty-state__icon" aria-hidden="true">
+                  <img src={emptyStateIcon} alt="" />
+                </div>
+                <h2 className="chat-empty-state__title">Select a Conversation</h2>
+                <p className="chat-empty-state__subtitle">
+                  Choose a conversation from the sidebar to start chatting with your contacts and teams.
+                </p>
+              </div>
+            )}
           </section>
         )}
 

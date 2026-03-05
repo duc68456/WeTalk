@@ -39,6 +39,52 @@
   flex-direction: column;
 }
 
+/* Empty state (no active conversation) */
+.chat-empty-state {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.chat-empty-state__icon {
+  width: 120px;
+  height: 120px;
+  border-radius: 60px;
+  border: 1.6px solid #e5e7eb;
+  background: linear-gradient(135deg, #f9fafb 0%, #e5e7eb 100%);
+  display: grid;
+  place-items: center;
+  margin-bottom: 24px;
+}
+
+.chat-empty-state__icon img {
+  width: 56px;
+  height: 56px;
+  opacity: 0.9;
+}
+
+.chat-empty-state__title {
+  margin: 0;
+  font-size: 24px;
+  line-height: 36px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.chat-empty-state__subtitle {
+  margin: 12px 0 0 0;
+  max-width: 380px;
+  font-size: 15px;
+  line-height: 22.5px;
+  font-weight: 400;
+  color: #6b7280;
+}
+
 @media (max-width: 1100px) {
   .chat-panel--thread {
     min-width: 480px;

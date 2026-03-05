@@ -5,6 +5,8 @@ import SignUp from './pages/SignUp.jsx'
 import SignUpSuccess from './pages/SignUpSuccess.jsx'
 import Chat from './pages/Chat.jsx'
 
+import { SocketProvider } from './components/utils/SocketContext.jsx'
+
 function App() {
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('user')
@@ -57,12 +59,16 @@ function App() {
   }
 
   if (route === 'chat') {
-    return <Chat 
-      token={token}
-      user={user}
-      onLogout = {handleLogout}
-      onUserUpdated={handleUserUpdated}
-      />
+    return (
+      <SocketProvider token={token}>
+        <Chat 
+          token={token}
+          user={user}
+          onLogout = {handleLogout}
+          onUserUpdated={handleUserUpdated}
+          />
+      </SocketProvider>
+    )
   }
 
   if (route === 'signup') {

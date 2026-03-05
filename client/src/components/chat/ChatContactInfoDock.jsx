@@ -7,8 +7,28 @@ import muteIcon from '../../assets/icons/chat/settings.svg'
 import closeIcon from '../../assets/icons/chat/back.svg'
 import { useRef } from 'react'
 
-const DEFAULT_AVATAR_URL =
-  'https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg'
+function DefaultContactAvatarIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="42"
+      height="42"
+      viewBox="0 0 47 47"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+      className="contact-dock-avatarFallback"
+    >
+      <path
+        d="M44.3333 30.3335C44.3333 31.5712 43.8416 32.7582 42.9665 33.6333C42.0913 34.5085 40.9043 35.0002 39.6666 35.0002H11.6666L2.33331 44.3335V7.00016C2.33331 5.76249 2.82498 4.5755 3.70015 3.70033C4.57532 2.82516 5.7623 2.3335 6.99998 2.3335H39.6666C40.9043 2.3335 42.0913 2.82516 42.9665 3.70033C43.8416 4.5755 44.3333 5.76249 44.3333 7.00016V30.3335Z"
+        stroke="#9CA3AF"
+        strokeWidth="4.66667"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
 
 function ActionButton({ icon, label, onClick }) {
   return (
@@ -25,15 +45,24 @@ function MembersPreview({ membersCount = 0, previewAvatars = [], onViewAll }) {
     <button className="contact-dock-members" type="button" onClick={onViewAll} aria-label="View all members">
       <div className="contact-dock-members-avatars" aria-hidden="true">
         {avatars.length ? (
-          avatars.map((a, idx) => (
-            <img
-              key={a?.id || idx}
-              className="contact-dock-members-avatar"
-              src={a?.src || DEFAULT_AVATAR_URL}
-              alt=""
-              style={{ zIndex: avatars.length - idx }}
-            />
-          ))
+          avatars.map((a, idx) =>
+            a?.src ? (
+              <img
+                key={a?.id || idx}
+                className="contact-dock-members-avatar"
+                src={a.src}
+                alt=""
+                style={{ zIndex: avatars.length - idx }}
+              />
+            ) : (
+              <span
+                key={a?.id || idx}
+                className="contact-dock-members-fallback"
+                aria-hidden="true"
+                style={{ zIndex: avatars.length - idx }}
+              />
+            )
+          )
         ) : (
           <span className="contact-dock-members-fallback" />
         )}
@@ -69,7 +98,7 @@ export default function ChatContactInfoDock({
 
   const name = contact?.name || 'Unknown'
   const status = contact?.status || 'Active now'
-  const avatarUrl = contact?.avatarUrl || DEFAULT_AVATAR_URL
+  const avatarUrl = contact?.avatarUrl || ''
 
   return (
     <aside className="chat-panel chat-panel--contact" aria-label="Contact info">
@@ -92,7 +121,11 @@ export default function ChatContactInfoDock({
             aria-label={allowEditAvatar ? 'Change group avatar' : 'Avatar'}
             data-editable={allowEditAvatar ? 'true' : 'false'}
           >
-            <img className="contact-dock-avatar" src={avatarUrl} alt="" />
+            {avatarUrl ? (
+              <img className="contact-dock-avatar" src={avatarUrl} alt="" />
+            ) : (
+              <DefaultContactAvatarIcon />
+            )}
             {allowEditAvatar ? (
               <span className="contact-dock-avatarOverlay" aria-hidden="true">
                 {isUploadingAvatar ? 'Uploading…' : 'Change'}

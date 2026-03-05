@@ -61,10 +61,11 @@
   border: 4px solid #f9fafb;
   overflow: hidden;
   padding: 0;
-  background: transparent;
+  background: #f9fafb;
   cursor: default;
   position: relative;
-  display: block;
+  display: grid;
+  place-items: center;
 }
 
 .contact-dock-error {
@@ -88,6 +89,12 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+}
+
+.contact-dock-avatarFallback {
+  width: 42px;
+  height: 42px;
   display: block;
 }
 

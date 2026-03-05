@@ -3,6 +3,10 @@ import '../../styles/components/chat/chatMessageBubble.css'
 import ChatAvatar from './ChatAvatar.jsx'
 
 export default function ChatMessageBubble({ message }) {
+  if (message?.kind === 'guard') {
+    return <div className="chat-time-guard">{message.label}</div>
+  }
+
   const { from, author, initials, avatarUrl, text, time, createdAt } = message
   const isMe = from === 'me'
 

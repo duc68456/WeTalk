@@ -32,9 +32,12 @@ router.get('/:conversationId', async (req, res, next) => {
   try {
     const { conversationId } = req.params
     const userId = req.user.userId
+    // logger.info('req limit: ', req.query.limit)
 
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
+    // const limit = parseInt(req.query.limit) || 10;
+    const limit = 20
+    logger.info('limit: ', req.query.limit, ' query page: ', req.query.page)
 
     const messages = await messageService.getMessagesByConversationId(userId, conversationId, page, limit)
 
