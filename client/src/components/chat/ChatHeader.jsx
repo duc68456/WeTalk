@@ -37,8 +37,7 @@ export default function ChatHeader({
 
         <div className="chat-header-meta">
           <div className="chat-header-name">{name}</div>
-          {/* TEMP: hide user's activity status text */}
-          {/* <div className="chat-header-status">{status}</div> */}
+          {status ? <div className="chat-header-status">{status}</div> : null}
         </div>
       </div>
 

@@ -12,6 +12,7 @@ const getUserById = async (userId) => {
       email: true,
       name: true,
       avatarUrl: true,
+      lastActiveAt: true,
       createdAt: true,
       updatedAt: true,
       _count: {
@@ -28,14 +29,45 @@ const getUserById = async (userId) => {
 }
 
 const searchUser = async (email) => {
+  const normalizedEmail = (email || '').toString().trim().toLowerCase()
+
+  if (!normalizedEmail) {
+    throw new Error('EMAIL_REQUIRED')
+  }
+
+  // basic email format check
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(normalizedEmail)) {
+    throw new Error('EMAIL_INVALID')
+  }
+
   const user = await prisma.user.findFirst({
     where: {
-      email: email
+      email: normalizedEmail
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      avatarUrl: true,
+      lastActiveAt: true,
+      createdAt: true
     }
   })
 
   if (!user) {
     throw new Error('USER_NOT_FOUND')
+  }
+
+  return user
+}
+
+const searchUserForRequester = async (email, requesterUserId) => {
+  const user = await searchUser(email)
+
+  // Zalo-style: searching yourself is not useful for "add friend" flows
+  if (requesterUserId && user.id === requesterUserId) {
+    throw new Error('CANNOT_SEARCH_SELF')
   }
 
   return user
@@ -70,6 +102,7 @@ const updateAvatarUser = async (avatarUrl, userId) => {
 export default {
   getUserById,
   searchUser,
+  searchUserForRequester,
   updateUser,
   updateAvatarUser
 }

@@ -60,7 +60,7 @@ function App() {
 
   if (route === 'chat') {
     return (
-      <SocketProvider token={token}>
+      <SocketProvider token={token} user={user}>
         <Chat 
           token={token}
           user={user}

@@ -4,7 +4,7 @@ import ChatAvatar from './ChatAvatar.jsx'
 import ChatAvatarStack from './ChatAvatarStack.jsx'
 
 export default function ChatConversationItem({ conversation, active, onClick }) {
-  const { name, initials, time, preview, unread = 0, status, avatarUrl, type, memberAvatars } = conversation
+  const { name, initials, time, preview, unread = 0, status, avatarUrl, type, memberAvatars, offlineLabel } = conversation
 
   return (
     <button
@@ -14,15 +14,22 @@ export default function ChatConversationItem({ conversation, active, onClick }) 
       role="listitem"
     >
       {type === 'GROUP' && !avatarUrl ? (
-        <ChatAvatarStack avatars={memberAvatars} initials={initials} size="md" />
+        <ChatAvatarStack avatars={memberAvatars} initials={initials} size="md" showPresence={false} />
       ) : (
-        <ChatAvatar initials={initials} src={avatarUrl} presence={status} size="md" />
+        <ChatAvatar
+          initials={initials}
+          src={avatarUrl}
+          presence={status}
+          size="md"
+          showPresence={type !== 'GROUP'}
+          sublabel={type === 'DIRECT' ? offlineLabel : ''}
+        />
       )}
 
       <div className="chat-convo-body">
         <div className="chat-convo-top">
           <div className={`chat-convo-name ${active ? 'chat-convo-name--active' : ''}`}>{name}</div>
-          <div className="chat-convo-time">{time}</div>
+          <div className="chat-convo-time">{offlineLabel || time}</div>
         </div>
 
         <div className="chat-convo-bottom">

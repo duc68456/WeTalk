@@ -39,6 +39,14 @@
   flex-direction: column;
 }
 
+.chat-typing-indicator {
+  flex: 0 0 auto;
+  padding: 8px 24px 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: #6b7280;
+}
+
 /* Empty state (no active conversation) */
 .chat-empty-state {
   flex: 1;
@@ -144,6 +152,10 @@
   .chat-composer {
     height: 72px;
     padding: 14px 16px 0;
+  }
+
+  .chat-typing-indicator {
+    padding: 6px 16px 0;
   }
 
   .chat-messages {

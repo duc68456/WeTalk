@@ -1,9 +1,9 @@
 import '../../styles/components/chat/chatContactInfoDock.css'
 
-import videoIcon from '../../assets/icons/chat/video.svg'
-import aiIcon from '../../assets/icons/chat/ai.svg'
-import searchIcon from '../../assets/icons/chat/search.svg'
-import muteIcon from '../../assets/icons/chat/settings.svg'
+import videoIcon from '../../assets/icons/chat/contactDockVideo.svg'
+import phoneIcon from '../../assets/icons/chat/contactDockCall.svg'
+import optionsIcon from '../../assets/icons/chat/contactDockOptions.svg'
+import searchIcon from '../../assets/icons/chat/contactDockSearch.svg'
 import closeIcon from '../../assets/icons/chat/back.svg'
 import { useRef } from 'react'
 
@@ -97,7 +97,6 @@ export default function ChatContactInfoDock({
   const fileInputRef = useRef(null)
 
   const name = contact?.name || 'Unknown'
-  const status = contact?.status || 'Active now'
   const avatarUrl = contact?.avatarUrl || ''
 
   return (
@@ -147,18 +146,15 @@ export default function ChatContactInfoDock({
             }}
           />
           <div className="contact-dock-name">{name}</div>
-          <div className="contact-dock-status">
-            <span className="contact-dock-statusDot" aria-hidden="true" />
-            <span>{status}</span>
-          </div>
+          {/* Status line intentionally hidden to match current design spec. */}
 
           {errorMessage ? <div className="contact-dock-error">{errorMessage}</div> : null}
         </div>
 
         <div className="contact-dock-actions" role="group" aria-label="Contact actions">
           <ActionButton icon={videoIcon} label="Video" />
-          <ActionButton icon={aiIcon} label="AI Summary" />
-          <ActionButton icon={muteIcon} label="Mute" />
+          <ActionButton icon={phoneIcon} label="Call" />
+          <ActionButton icon={optionsIcon} label="Options" />
           <ActionButton icon={searchIcon} label="Search" />
         </div>
 

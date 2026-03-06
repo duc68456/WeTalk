@@ -5,7 +5,14 @@ import '../../styles/components/chat/chatAvatar.css'
 const DEFAULT_AVATAR_URL =
   'https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg'
 
-export default function ChatAvatar({ initials, src, presence = 'offline', size = 'sm' }) {
+export default function ChatAvatar({
+  initials,
+  src,
+  presence = 'offline',
+  size = 'sm',
+  showPresence = true,
+  sublabel = ''
+}) {
   const [imgOk, setImgOk] = useState(true)
 
   return (
@@ -25,8 +32,14 @@ export default function ChatAvatar({ initials, src, presence = 'offline', size =
           initials
         )}
       </div>
-      {/* TEMP: hide presence (online/away/offline) indicator */}
-      {/* <span className={`chat-avatar-presence chat-avatar-presence--${presence}`} aria-hidden="true" /> */}
+      {sublabel ? (
+        <span className={`chat-avatar-sublabel chat-avatar-sublabel--${size}`} aria-hidden="true">
+          {sublabel}
+        </span>
+      ) : null}
+      {showPresence && presence && !sublabel && (
+        <span className={`chat-avatar-presence chat-avatar-presence--${presence}`} aria-hidden="true" />
+      )}
     </div>
   )
 }

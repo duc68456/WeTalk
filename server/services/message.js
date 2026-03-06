@@ -1,5 +1,14 @@
 import prisma from '../config/db.js'
 
+const getConversationMemberUserIds = async (conversationId) => {
+  if (!conversationId) return []
+  const rows = await prisma.member.findMany({
+    where: { conversationId, status: 'ACTIVE' },
+    select: { userId: true }
+  })
+  return rows.map((r) => r.userId).filter(Boolean)
+}
+
 const postMessageToConversation = async (senderId, conversationId, content) => {
   const isMember = await prisma.member.findFirst({
     where: {
@@ -113,5 +122,6 @@ const getMessagesByConversationId = async (userId, conversationId, page, limit) 
 
 export default {
   postMessageToConversation,
+  getConversationMemberUserIds,
   getMessagesByConversationId
 }

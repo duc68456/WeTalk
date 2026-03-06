@@ -15,7 +15,19 @@ router.post('/', async (req, res, next) => {
 
     const newMessage = await messageService.postMessageToConversation(senderId, conversationId, content)
 
+    // Emit to the conversation room (for clients already joined).
     io.to(conversationId).emit('new_message', newMessage)
+
+    // Also emit to each member's user room so recipients get the message even
+    // if they haven't joined this conversation room yet (new chat / first message).
+    try {
+      const members = await messageService.getConversationMemberUserIds(conversationId)
+      for (const uid of members) {
+        io.to(`user:${uid}`).emit('new_message', newMessage)
+      }
+    } catch (e) {
+      logger.error('Failed to emit new_message to user rooms', e)
+    }
     
     return res.status(201).json({
       message: "Message created succesfully",

@@ -27,7 +27,7 @@ const getMyConversation = async (userId) => {
               select: {
                 // userId,
                 user: {
-                  select: { id: true, name: true, avatarUrl: true }
+                  select: { id: true, name: true, avatarUrl: true, lastActiveAt: true }
                 }
               }
             },
@@ -60,7 +60,17 @@ const getConversationById = async (conversationId, requesterId) => {
     include: {
       members: {
         include: {
-          user: true,
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              avatarUrl: true,
+              lastActiveAt: true,
+              createdAt: true,
+              updatedAt: true
+            }
+          },
           // role: true
         }
       }
@@ -152,6 +162,129 @@ const createConversation = async (type, inviteesIds, creatorId, allMembersIds, n
   }
 }
 
+const getOrCreateDirectConversation = async (requesterId, partnerId) => {
+  if (!requesterId || !partnerId) {
+    throw new Error('MISSING_PARTNER')
+  }
+
+  if (requesterId === partnerId) {
+    throw new Error('CANNOT_CHAT_SELF')
+  }
+
+  const partnerExists = await prisma.user.findUnique({
+    where: { id: partnerId },
+    select: { id: true }
+  })
+  if (!partnerExists) {
+    throw new Error('USER_NOT_FOUND')
+  }
+
+  // Concurrency-safe get-or-create.
+  // Even if the client (or browser) fires multiple requests quickly, this should resolve to one canonical DIRECT conversation.
+  const result = await prisma.$transaction(async (tx) => {
+    const existing = await tx.conversation.findFirst({
+      where: {
+        type: 'DIRECT',
+        deletedAt: null,
+        AND: [
+          { members: { some: { userId: requesterId } } },
+          { members: { some: { userId: partnerId } } }
+        ]
+      },
+      select: {
+        id: true,
+        type: true,
+        name: true,
+        avatarUrl: true,
+        createdAt: true,
+        members: {
+          where: {
+            userId: { not: requesterId }
+          },
+          take: 4,
+          select: {
+            user: {
+              select: { id: true, name: true, avatarUrl: true, lastActiveAt: true }
+            }
+          }
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          include: {
+            sender: {
+              select: { name: true }
+            }
+          }
+        }
+      }
+    })
+
+    if (existing) return { conversation: existing, isAlreadyExisted: true }
+
+    // Create new DIRECT conversation.
+    await tx.conversation.create({
+      data: {
+        type: 'DIRECT',
+        members: {
+          create: [
+            { user: { connect: { id: requesterId } }, role: 'PEER' },
+            { user: { connect: { id: partnerId } }, role: 'PEER' }
+          ]
+        }
+      }
+    })
+
+    // Read again to return the canonical row (handles rare cases where multiple creates slip through under weak isolation).
+    const canonical = await tx.conversation.findFirst({
+      where: {
+        type: 'DIRECT',
+        deletedAt: null,
+        AND: [
+          { members: { some: { userId: requesterId } } },
+          { members: { some: { userId: partnerId } } }
+        ]
+      },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        type: true,
+        name: true,
+        avatarUrl: true,
+        createdAt: true,
+        members: {
+          where: {
+            userId: { not: requesterId }
+          },
+          take: 4,
+          select: {
+            user: {
+              select: { id: true, name: true, avatarUrl: true, lastActiveAt: true }
+            }
+          }
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          include: {
+            sender: {
+              select: { name: true }
+            }
+          }
+        }
+      }
+    })
+
+    if (!canonical) {
+      throw new Error('FAILED_TO_CREATE_DIRECT')
+    }
+
+    return { conversation: canonical, isAlreadyExisted: false }
+  })
+
+  return result
+}
+
 const deleteConversation = async (conversationId, requesterId) => {
   const conversation = await prisma.conversation.findUnique({
     where: { 
@@ -225,6 +358,7 @@ export default {
   getMyConversation,
   getConversationById,
   createConversation,
+  getOrCreateDirectConversation,
   deleteConversation,
   updateGroupAvatar
 }

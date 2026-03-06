@@ -9,14 +9,14 @@ export const useSocket = () => {
   return useContext(SocketContext);
 };
 
-export const SocketProvider = ({ children, token }) => {
+export const SocketProvider = ({ children, token, user }) => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
     if (!token) return;
 
     const newSocket = io(SOCKET_URL, {
-      auth: { token: token }
+      auth: { token: token, name: user?.name || '' }
     });
 
     setSocket(newSocket);
@@ -24,7 +24,7 @@ export const SocketProvider = ({ children, token }) => {
     return () => {
       newSocket.disconnect();
     };
-  }, [token]);
+  }, [token, user?.name]);
 
   return (
     <SocketContext.Provider value={socket}>

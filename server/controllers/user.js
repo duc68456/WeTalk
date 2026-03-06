@@ -4,6 +4,7 @@ import logger from '../utils/logger.js'
 
 import userService from '../services/user.js'
 import uploadCloud from '../config/cloudinary.js'
+import auth from '../middlewares/auth.js'
 
 const router = express.Router()
 
@@ -24,19 +25,35 @@ router.get('/me', async (req, res, next) => {
   }
 })
 
-router.get('/search', async (req, res, next) => {
+router.get('/search', auth, async (req, res, next) => {
   try {
     const { email } = req.query
 
-    const user = await userService.searchUser(email)
+    const requesterUserId = req.user?.userId
+    const user = await userService.searchUserForRequester(email, requesterUserId)
 
     return res.status(200).json({
-      message: "Information of this user",
-      user: user
+      message: 'User found',
+      user
     })
   }
   catch (error) {
     logger.error(error)
+
+    const code = error?.message || error
+    if (code === 'EMAIL_REQUIRED') {
+      return res.status(400).json({ message: 'Email is required' })
+    }
+    if (code === 'EMAIL_INVALID') {
+      return res.status(400).json({ message: 'Invalid email format' })
+    }
+    if (code === 'CANNOT_SEARCH_SELF') {
+      return res.status(400).json({ message: 'You cannot search yourself' })
+    }
+    if (code === 'USER_NOT_FOUND') {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
     next(error)
   }
 })

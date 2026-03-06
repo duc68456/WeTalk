@@ -87,6 +87,37 @@ router.post('/', async (req, res, next) => {
   }
 })
 
+// Zalo-style: start (find-or-create) a DIRECT conversation with a user.
+router.post('/direct', async (req, res, next) => {
+  try {
+    const requesterId = req.user?.userId
+    const { partnerId } = req.body || {}
+
+    const result = await conversationService.getOrCreateDirectConversation(requesterId, partnerId)
+    const status = result.isAlreadyExisted ? 200 : 201
+
+    return res.status(status).json({
+      message: result.isAlreadyExisted ? 'Conversation already exists' : 'Conversation created',
+      conversation: result.conversation
+    })
+  } catch (error) {
+    const code = error?.message || error
+
+    if (code === 'MISSING_PARTNER') {
+      return res.status(400).json({ message: 'partnerId is required' })
+    }
+    if (code === 'CANNOT_CHAT_SELF') {
+      return res.status(400).json({ message: 'You cannot chat with yourself' })
+    }
+    if (code === 'USER_NOT_FOUND') {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    logger.error(error)
+    next(error)
+  }
+})
+
 router.delete('/:conversationId', async (req, res, next) => {
   try {
     const { conversationId } = req.params;
