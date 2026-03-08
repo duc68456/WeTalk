@@ -4,6 +4,7 @@ import ChatConversationItem from './ChatConversationItem.jsx'
 
 import filterIcon from '../../assets/icons/chat/filter.svg'
 import searchIcon from '../../assets/icons/chat/search.svg'
+import plusIcon from '../../assets/icons/chat/plus.svg'
 
 export default function ChatConversationList({
   title,
@@ -12,6 +13,7 @@ export default function ChatConversationList({
   conversations,
   activeId,
   onSelectConversation,
+  onCreateGroup,
 }) {
   const sortedConversations = [...conversations].sort((a, b) => {
     const at = typeof a?.sortTs === 'number' ? a.sortTs : 0
@@ -23,9 +25,12 @@ export default function ChatConversationList({
     <div className="chat-list">
       <header className="chat-list-header">
         <h2 className="chat-list-title">{title}</h2>
-        <button className="chat-list-filter" type="button" aria-label="Filter">
-          <img src={filterIcon} alt="" />
-        </button>
+
+        <div className="chat-list-headerActions">
+          <button className="chat-list-filter" type="button" aria-label="Filter">
+            <img src={filterIcon} alt="" />
+          </button>
+        </div>
       </header>
 
       <div className="chat-list-search">
@@ -49,6 +54,17 @@ export default function ChatConversationList({
             onClick={() => onSelectConversation?.(c.id)}
           />
         ))}
+      </div>
+
+      <div className="chat-list-createBar" role="region" aria-label="Create group">
+        <button
+          className="chat-list-create"
+          type="button"
+          onClick={() => onCreateGroup?.()}
+        >
+          <img className="chat-list-createIcon" src={plusIcon} alt="" aria-hidden="true" />
+          <span className="chat-list-createLabel">Create Group</span>
+        </button>
       </div>
     </div>
   )

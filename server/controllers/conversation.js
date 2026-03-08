@@ -1,6 +1,8 @@
 import express from 'express'
 import zod from 'zod'
-import { ConversationType } from '@prisma/client';
+
+import pkg from '@prisma/client';
+const { ConversationType } = pkg;
 
 import logger from '../utils/logger.js'
 

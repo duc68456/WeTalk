@@ -12,6 +12,7 @@ import ChatResizeHandle from '../components/chat/ChatResizeHandle.jsx'
 import ChatProfileSettingsPanel from '../components/chat/ChatProfileSettingsPanel.jsx'
 import ChatContactInfoDock from '../components/chat/ChatContactInfoDock.jsx'
 import ChatMembersDock from '../components/chat/ChatMembersDock.jsx'
+import CreateGroupModal from '../components/chat/CreateGroupModal.jsx'
 
 import { useSocket } from '../components/utils/SocketContext.jsx'
 
@@ -53,6 +54,10 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
   const [isMembersOpen, setIsMembersOpen] = useState(false)
   const [isUploadingGroupAvatar, setIsUploadingGroupAvatar] = useState(false)
   const [groupAvatarError, setGroupAvatarError] = useState('')
+
+  const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
+
+  const [groupCandidates, setGroupCandidates] = useState([])
 
   const [membersState, setMembersState] = useState({
     isLoading: false,
@@ -136,6 +141,55 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
     return null
   }
 
+    // Load sidebar conversations when entering chat (and whenever auth token changes).
+    useEffect(() => {
+      let isMounted = true
+
+      const load = async () => {
+        if (!token) {
+          setConversations([])
+          setActiveConversationId(null)
+          setConversationLoadError('')
+          setIsLoadingConversations(false)
+          return
+        }
+
+        try {
+          setIsLoadingConversations(true)
+          setConversationLoadError('')
+
+          const api = createApiClient(token)
+          const res = await api.get('/api/conversation/myConversation')
+          const rows = Array.isArray(res?.data) ? res.data : []
+          const mapped = rows.map(mapBackendConversation).filter(Boolean)
+
+          if (!isMounted) return
+          setConversations(mapped)
+
+          setActiveConversationId((prev) => {
+            if (prev && mapped.some((c) => c.id === prev)) return prev
+            return null
+          })
+        } catch (err) {
+          if (!isMounted) return
+          const message =
+            (typeof err?.response?.data?.message === 'string' && err.response.data.message) ||
+            err?.message ||
+            'Failed to load conversations'
+          setConversationLoadError(message)
+          setConversations([])
+          setActiveConversationId(null)
+        } finally {
+          if (isMounted) setIsLoadingConversations(false)
+        }
+      }
+
+      load()
+      return () => {
+        isMounted = false
+      }
+    }, [token])
+
   const mapBackendConversation = (row) => {
     const conv = row?.conversation
     if (!conv?.id) return null
@@ -183,51 +237,27 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
     }
   }
 
+  // Build candidate list from DIRECT conversations (people we already have DIRECT chats with).
   useEffect(() => {
-    let isMounted = true
+    const seen = new Set()
+    const list = []
 
-    const load = async () => {
-      if (!token) {
-        setConversations([])
-        setActiveConversationId(null)
-        return
-      }
+    for (const c of conversations) {
+      if (c?.type !== 'DIRECT') continue
 
-      try {
-        setIsLoadingConversations(true)
-        setConversationLoadError('')
-
-        const api = createApiClient(token)
-        const res = await api.get('/api/conversation/myConversation')
-        const rows = Array.isArray(res?.data) ? res.data : []
-        const mapped = rows.map(mapBackendConversation).filter(Boolean)
-
-        if (!isMounted) return
-        setConversations(mapped)
-
-        setActiveConversationId((prev) => {
-          if (prev && mapped.some((c) => c.id === prev)) return prev
-          return null
-        })
-      } catch (err) {
-        if (!isMounted) return
-        const message =
-          (typeof err?.response?.data?.message === 'string' && err.response.data.message) ||
-          err?.message ||
-          'Failed to load conversations'
-        setConversationLoadError(message)
-        setConversations([])
-        setActiveConversationId(null)
-      } finally {
-        if (isMounted) setIsLoadingConversations(false)
-      }
+      const partnerId = c?.partnerId
+      if (!partnerId || seen.has(partnerId)) continue
+      seen.add(partnerId)
+      list.push({
+        id: partnerId,
+        name: c?.name || 'Unknown',
+        avatarUrl: c?.avatarUrl || null,
+        initials: c?.initials || initialsFromName(c?.name || '??'),
+      })
     }
 
-    load()
-    return () => {
-      isMounted = false
-    }
-  }, [token])
+    setGroupCandidates(list)
+  }, [conversations])
 
   // Socket is provided via SocketProvider/SocketContext.
   // Join all conversation rooms whenever the list changes.
@@ -1154,9 +1184,85 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
                 setActiveConversationId(id)
                 if (isNarrowLandscape) setNarrowView('thread')
               }}
+              onCreateGroup={() => {
+                setIsCreateGroupOpen(true)
+              }}
             />
           </section>
         )}
+
+        <CreateGroupModal
+          isOpen={isCreateGroupOpen}
+          onClose={() => setIsCreateGroupOpen(false)}
+          members={groupCandidates}
+          onSearchEmail={async (email) => {
+            if (!token) throw new Error('Not authenticated')
+            const api = createApiClient(token)
+            const res = await api.get(`/api/user/search`, { params: { email } })
+            const found = res?.data?.user
+            if (!found?.id) throw new Error('User not found')
+
+            // Preview-only: do NOT mutate DIRECT candidates list.
+            return {
+              id: found.id,
+              name: found.name || found.email || 'Unknown',
+              avatarUrl: found.avatarUrl || null,
+              email: found.email || email,
+              initials: '',
+            }
+          }}
+          onCreate={async ({ name, memberIds }) => {
+            if (!token) return
+            const api = createApiClient(token)
+
+            // Backend expects participantsIds (UUIDs) excluding creator; it will add creator automatically.
+            const res = await api.post('/api/conversation', {
+              type: 'GROUP',
+              name,
+              participantsIds: memberIds,
+            })
+
+            const created = res?.data?.conversation
+            if (!created?.id) {
+              setIsCreateGroupOpen(false)
+              return
+            }
+
+            // Fetch full details so the UI has members, avatar, etc.
+            let detail = null
+            try {
+              const full = await api.get(`/api/conversation/${created.id}`)
+              detail = full?.data?.conversation || null
+            } catch {
+              detail = null
+            }
+
+            // Map into sidebar shape.
+            const pseudoRow = {
+              conversation: {
+                id: created.id,
+                type: created.type || 'GROUP',
+                name: created.name || name,
+                avatarUrl: created.avatarUrl || null,
+                createdAt: created.createdAt,
+                members: (Array.isArray(detail?.members) ? detail.members : []),
+                messages: []
+              }
+            }
+
+            const mapped = mapBackendConversation(pseudoRow)
+            if (mapped) {
+              setConversations((prev) => {
+                const exists = prev.some((c) => c.id === mapped.id)
+                const next = exists ? prev.map((c) => (c.id === mapped.id ? { ...c, ...mapped } : c)) : [mapped, ...prev]
+                return next.slice().sort((a, b) => (b.sortTs || 0) - (a.sortTs || 0))
+              })
+              setActiveConversationId(mapped.id)
+            }
+
+            setIsCreateGroupOpen(false)
+          }}
+        />
 
         {!isProfileSettingsOpen && !isNarrowLandscape && (
           <ChatResizeHandle

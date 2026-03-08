@@ -1,6 +1,8 @@
 import express from 'express'
 import zod from 'zod'
-import { RoleName, MemberStatus } from '@prisma/client'
+
+import pkg from '@prisma/client';
+const { RoleName, MemberStatus } = pkg;
 
 import logger from '../utils/logger.js'
 
