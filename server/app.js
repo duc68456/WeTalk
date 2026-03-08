@@ -139,9 +139,14 @@ const clientBuildPath = path.join(__dirname, '../client/dist');
 
 app.use(express.static(clientBuildPath));
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(clientBuildPath, 'index.html'));
-});
+// Express 5 (path-to-regexp v6) no longer accepts a bare "*" route.
+// Serve the SPA for non-API GET requests.
+app.get(/^(?!\/api\/).*/, (req, res, next) => {
+  // If the client wasn't built/deployed, fall through to the error handler.
+  res.sendFile(path.join(clientBuildPath, 'index.html'), (err) => {
+    if (err) return next(err)
+  })
+})
 
 app.use(errorHandler)
 

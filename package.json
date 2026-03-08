@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-  "install-server": "cd server && npm install",
-  "install-client": "cd client && npm install",
-  "postinstall": "npm run install-server && npm run install-client", 
-  "start": "node server/index.js"
+    "install-server": "cd server && npm install",
+    "install-client": "cd client && npm install",
+    "build-client": "cd client && npm run build",
+    "prisma:generate": "cd server && npx prisma generate",
+    "postinstall": "npm run install-server && npm run install-client && npm run prisma:generate && npm run build-client",
+    "start": "node server/index.js"
   },
   "engines": {
     "node": "20.x"
