@@ -1,0 +1,29 @@
+{
+  "name": "wetalk",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "install-server": "cd server && npm install",
+    "install-client": "cd client && npm install",
+    "postinstall": "npm run install-server && npm run install-client",
+    "build-client": "cd client && npm run build",
+    "build-server": "cd server && npx prisma generate",
+    "heroku-postbuild": "npm run build-client && npm run build-server",
+    "start": "cd server && node index.js"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/duc68456/WeTalk.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/duc68456/WeTalk/issues"
+  },
+  "homepage": "https://github.com/duc68456/WeTalk#readme",
+  "description": ""
+}
