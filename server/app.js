@@ -139,9 +139,18 @@ const clientBuildPath = path.join(__dirname, '../client/dist');
 
 app.use(express.static(clientBuildPath));
 
+// If a static asset is missing, don't turn it into a JSON 500.
+// Let the browser receive a normal 404 for `/assets/*` (and other dist files).
+app.use((err, req, res, next) => {
+  if (err && (req.path?.startsWith('/assets/') || req.path?.includes('.'))) {
+    return res.sendStatus(404)
+  }
+  next(err)
+})
+
 // Express 5 (path-to-regexp v6) no longer accepts a bare "*" route.
 // Serve the SPA for non-API GET requests.
-app.get(/^(?!\/api\/).*/, (req, res, next) => {
+app.get(/^(?!\/api\/)(?!\/assets\/).*/, (req, res, next) => {
   // If the client wasn't built/deployed, fall through to the error handler.
   res.sendFile(path.join(clientBuildPath, 'index.html'), (err) => {
     if (err) return next(err)
