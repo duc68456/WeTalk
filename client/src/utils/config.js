@@ -1,8 +1,4 @@
-import dotenv from 'dotenv';
-dotenv.config()
-
-const VITE_API_BASE_URL = process.env.VITE_API_BASE_URL
-
 export default {
-  VITE_API_BASE_URL
+  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  VITE_SOCKET_URL: import.meta.env.VITE_SOCKET_URL
 }
