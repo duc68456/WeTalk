@@ -3,6 +3,7 @@ dotenv.config()
 
 const MONGO_URI = process.env.MONGO_URI
 const DATABASE_URL = process.env.DATABASE_URL
+const DIRECT_URL = process.env.DIRECT_URL
 
 const PORT = process.env.PORT || 3000
 
@@ -19,5 +20,6 @@ export default {
   JWT_SECRET,
   CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_API_KEY,
-  CLOUDINARY_API_SECRET
+  CLOUDINARY_API_SECRET,
+  DIRECT_URL
 }
