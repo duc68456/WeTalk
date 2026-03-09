@@ -51,7 +51,10 @@ export default function Login({ onNavigateSignUp, onNavigateChat, onLoginSuccess
       // Clear any server-side error on success
       setSubmitError('')
 
-      onLoginSuccess?.(res.data.user, res.data.token)
+      const user = res?.data?.user
+      const token = res?.data?.token
+
+      onLoginSuccess?.(user, token)
 
       logger.info('Login response:', res.data)
     } catch (err) {

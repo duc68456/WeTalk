@@ -60,7 +60,11 @@ export default function SignUp({ onNavigateLogin, onSignUpSuccess }) {
       onSignUpSuccess(user, token)
     }
     catch (error) {
-      const message = error.response.data.message
+      const status = error?.response?.status
+      const message =
+        error?.response?.data?.message ||
+        (status ? `Sign up failed (HTTP ${status}).` : '') ||
+        'Sign up failed. Please try again.'
       setSubmitError(message)
     }
 
