@@ -4,8 +4,6 @@ import { createApiClient } from '../../utils/api.js'
 
 import '../../styles/components/chat/chatProfileSettingsPanel.css'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
-
 // export default function ChatProfileSettingsPanel({
 //   displayName = 'John Doe',
 //   email = 'john.doe@example.com',
@@ -81,7 +79,7 @@ export default function ChatProfileSettingsPanel({ user, token, onUserUpdated })
       //   }
       // })
       const api = createApiClient(token)
-      const res = await api.patch('/api/user/update-avatar', formData)
+  const res = await api.patch('/user/update-avatar', formData)
 
       const updatedUser = res?.data?.user
       if (updatedUser) {
@@ -125,7 +123,7 @@ export default function ChatProfileSettingsPanel({ user, token, onUserUpdated })
       //   }
       // )
       const api = createApiClient(token)
-      const res = await api.patch('/api/user/update-profile', {
+      const res = await api.patch('/user/update-profile', {
         name: nextName
       })
 

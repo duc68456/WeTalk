@@ -159,7 +159,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
           setConversationLoadError('')
 
           const api = createApiClient(token)
-          const res = await api.get('/api/conversation/myConversation')
+          const res = await api.get('/conversation/myConversation')
           const rows = Array.isArray(res?.data) ? res.data : []
           const mapped = rows.map(mapBackendConversation).filter(Boolean)
 
@@ -335,7 +335,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
 
           try {
             const api = createApiClient(token)
-            const res = await api.get(`/api/conversation/${convId}`)
+            const res = await api.get(`/conversation/${convId}`)
             const conv = res?.data?.conversation
             if (!conv?.id) return
 
@@ -471,7 +471,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
 
       try {
         const api = createApiClient(token)
-        const res = await api.get(`/api/conversation/${activeConversationId}`)
+  const res = await api.get(`/conversation/${activeConversationId}`)
         const members = Array.isArray(res?.data?.conversation?.members) ? res.data.conversation.members : []
         const partner = members.find((m) => m?.user?.id && m.user.id !== user?.id)
         const lastActiveAt = partner?.user?.lastActiveAt || null
@@ -605,7 +605,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
       try {
         setMembersState((s) => ({ ...s, isLoading: true, error: '' }))
         const api = createApiClient(token)
-        const res = await api.get('/api/member', {
+  const res = await api.get('/member', {
           params: { conversationId: activeConversationId }
         })
 
@@ -892,7 +892,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
       try {
         setSearchUserState({ isLoading: true, error: '', user: null })
         const api = createApiClient(token)
-        const res = await api.get('/api/user/search', { params: { email: query } })
+  const res = await api.get('/user/search', { params: { email: query } })
         const found = res?.data?.user || null
         if (isCancelled) return
         setSearchUserState({ isLoading: false, error: '', user: found })
@@ -987,7 +987,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
     if (!token || !partnerId) return null
 
     const api = createApiClient(token)
-    const res = await api.post('/api/conversation/direct', { partnerId })
+  const res = await api.post('/conversation/direct', { partnerId })
     return res?.data?.conversation || null
   }
 
@@ -1026,7 +1026,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
 
       if (!conversationIdToSend) return
 
-      const res = await api.post('/api/message', {
+  const res = await api.post('/message', {
         conversationId: conversationIdToSend,
         content
       })
@@ -1216,7 +1216,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
             const api = createApiClient(token)
 
             // Backend expects participantsIds (UUIDs) excluding creator; it will add creator automatically.
-            const res = await api.post('/api/conversation', {
+            const res = await api.post('/conversation', {
               type: 'GROUP',
               name,
               participantsIds: memberIds,
@@ -1231,7 +1231,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
             // Fetch full details so the UI has members, avatar, etc.
             let detail = null
             try {
-              const full = await api.get(`/api/conversation/${created.id}`)
+              const full = await api.get(`/conversation/${created.id}`)
               detail = full?.data?.conversation || null
             } catch {
               detail = null
@@ -1415,7 +1415,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
                 const formData = new FormData()
                 formData.append('avatar', file)
 
-                const res = await api.patch(`/api/conversation/${activeConversationId}/update-avatar`, formData)
+                const res = await api.patch(`/conversation/${activeConversationId}/update-avatar`, formData)
                 const updated = res?.data?.conversation
                 const nextAvatarUrl = updated?.avatarUrl
 

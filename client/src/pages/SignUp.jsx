@@ -16,6 +16,8 @@ import lockIcon from '../assets/icons/common/lock.svg'
 import eyeIcon from '../assets/icons/common/eye.svg'
 import errorIcon from '../assets/icons/common/error-exclamation.svg'
 
+import { createApiClient } from '../utils/api.js'
+
 export default function SignUp({ onNavigateLogin, onSignUpSuccess }) {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -26,8 +28,6 @@ export default function SignUp({ onNavigateLogin, onSignUpSuccess }) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errors, setErrors] = useState({})
   const [submitError, setSubmitError] = useState('')
-
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -47,7 +47,8 @@ export default function SignUp({ onNavigateLogin, onSignUpSuccess }) {
     // TODO: connect to your server register endpoint
     console.log('Sign up submit', { fullName, email, password })
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/auth/register`, {
+      const api = createApiClient()
+      const res = await api.post('/auth/register', {
         email: email,
         password: password,
         name: fullName

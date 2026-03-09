@@ -16,8 +16,7 @@ import lockIcon from '../assets/icons/common/lock.svg'
 import eyeIcon from '../assets/icons/common/eye.svg'
 
 import logger from '../utils/logger.js'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+import { createApiClient } from '../utils/api.js'
 
 export default function Login({ onNavigateSignUp, onNavigateChat, onLoginSuccess }) {
   const [email, setEmail] = useState('')
@@ -43,7 +42,8 @@ export default function Login({ onNavigateSignUp, onNavigateChat, onLoginSuccess
     console.log('Login submit', { email, password })
     // console.log('email: ', email, ' password: ', password)
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/auth/login`, {
+      const api = createApiClient()
+      const res = await api.post('/auth/login', {
         email: email,
         password: password
       })
