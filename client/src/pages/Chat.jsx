@@ -29,6 +29,7 @@ const isLikelyEmail = (value = '') => {
 
 export default function Chat({ onLogout, user, token, onUserUpdated }) {
   const socket = useSocket()
+    const DEBUG_SEARCH = import.meta.env.VITE_DEBUG_SEARCH === '1'
   const messagesEndRef = useRef(null)
   const messageListRef = useRef(null)
   const lastNonGuardCountRef = useRef(0)
@@ -756,7 +757,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
         setHasMoreMessages(true)
 
         const api = createApiClient(token)
-        const res = await api.get(`/api/message/${activeConversationId}`, {
+        const res = await api.get(`/message/${activeConversationId}`, {
           params: { page: 1, limit: 30 }
         })
         const rows = res?.data?.messages?.data
@@ -816,7 +817,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
       const nextPage = messagePage + 1
 
       const api = createApiClient(token)
-      const res = await api.get(`/api/message/${activeConversationId}`, {
+      const res = await api.get(`/message/${activeConversationId}`, {
         params: { page: nextPage, limit: 30 }
       })
 
@@ -879,12 +880,14 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
 
     const run = async () => {
       if (!token) {
+        if (DEBUG_SEARCH) console.debug('[search] skipped: missing token')
         setSearchUserState({ isLoading: false, error: '', user: null })
         return
       }
 
       const query = search.trim()
       if (!isLikelyEmail(query)) {
+        if (DEBUG_SEARCH) console.debug('[search] skipped: not an email', { query })
         setSearchUserState((prev) => ({ ...prev, isLoading: false, error: '', user: null }))
         return
       }
@@ -892,6 +895,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
       try {
         setSearchUserState({ isLoading: true, error: '', user: null })
         const api = createApiClient(token)
+        if (DEBUG_SEARCH) console.debug('[search] request', { path: '/user/search', email: query })
   const res = await api.get('/user/search', { params: { email: query } })
         const found = res?.data?.user || null
         if (isCancelled) return
@@ -1198,7 +1202,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
           onSearchEmail={async (email) => {
             if (!token) throw new Error('Not authenticated')
             const api = createApiClient(token)
-            const res = await api.get(`/api/user/search`, { params: { email } })
+            const res = await api.get(`/user/search`, { params: { email } })
             const found = res?.data?.user
             if (!found?.id) throw new Error('User not found')
 
