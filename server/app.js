@@ -22,14 +22,23 @@ import jwt from 'jsonwebtoken'
 
 const app = express()
 const server = createServer(app)
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true)
+    if (allowedOrigins.includes(origin)) return callback(null, true)
+    
+    return callback(null, false) 
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}
+
 const io = new Server(server, {
-  cors: {
-    origin: process.env.NODE_ENV === 'production' 
-          ? ["https://wetalk-58940d14d1e3.herokuapp.com", "http://localhost:3000"] 
-          : ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],    methods: ["GET", "POST"],
-    credentials: true
-  }
+  cors: corsOptions
 })
+
 
 const allowedOrigins = [
   'http://localhost:5173',
@@ -38,22 +47,8 @@ const allowedOrigins = [
   'https://wetalk-58940d14d1e3.herokuapp.com'
 ]
 
-app.use(
-cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true)
-      
-      if (allowedOrigins.includes(origin)) return callback(null, true)
-      
-      // return callback(new Error(`CORS: origin not allowed: ${origin}`))
-      return callback(null, false)
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-  }))
-
-app.options(/.*/, cors())
+app.use(cors(corsOptions))
+app.options(/.*/, cors(corsOptions))
 
 app.set('io', io)
 
@@ -144,19 +139,6 @@ app.use(express.static(clientBuildPath));
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'API endpoint not found' });
 });
-
-// app.get(/.*/, (req, res) => {
-//   res.sendFile(path.join(clientBuildPath, 'index.html'));
-// });
-
-// // If a static asset is missing, don't turn it into a JSON 500.
-// // Let the browser receive a normal 404 for `/assets/*` (and other dist files).
-// app.use((err, req, res, next) => {
-//   if (err && (req.path?.startsWith('/assets/') || req.path?.includes('.'))) {
-//     return res.sendStatus(404)
-//   }
-//   next(err)
-// })
 
 app.get(/^(?!\/api\/)(?!\/assets\/).*/, (req, res, next) => {
   res.sendFile(path.join(clientBuildPath, 'index.html'), (err) => {
