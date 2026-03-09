@@ -45,7 +45,8 @@ cors({
       
       if (allowedOrigins.includes(origin)) return callback(null, true)
       
-      return callback(new Error(`CORS: origin not allowed: ${origin}`))
+      // return callback(new Error(`CORS: origin not allowed: ${origin}`))
+      return callback(null, false)
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -136,7 +137,7 @@ app.use('/api/message', authMiddleware, messageController)
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const clientBuildPath = path.join(process.cwd(), 'client', 'dist');
+const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');
 
 app.use(express.static(clientBuildPath));
 
@@ -144,9 +145,9 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: 'API endpoint not found' });
 });
 
-app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(clientBuildPath, 'index.html'));
-});
+// app.get(/.*/, (req, res) => {
+//   res.sendFile(path.join(clientBuildPath, 'index.html'));
+// });
 
 // // If a static asset is missing, don't turn it into a JSON 500.
 // // Let the browser receive a normal 404 for `/assets/*` (and other dist files).
@@ -157,14 +158,11 @@ app.get(/.*/, (req, res) => {
 //   next(err)
 // })
 
-// // Express 5 (path-to-regexp v6) no longer accepts a bare "*" route.
-// // Serve the SPA for non-API GET requests.
-// app.get(/^(?!\/api\/)(?!\/assets\/).*/, (req, res, next) => {
-//   // If the client wasn't built/deployed, fall through to the error handler.
-//   res.sendFile(path.join(clientBuildPath, 'index.html'), (err) => {
-//     if (err) return next(err)
-//   })
-// })
+app.get(/^(?!\/api\/)(?!\/assets\/).*/, (req, res, next) => {
+  res.sendFile(path.join(clientBuildPath, 'index.html'), (err) => {
+    if (err) return next(err)
+  })
+})
 
 app.use(errorHandler)
 
