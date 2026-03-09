@@ -24,23 +24,25 @@ const app = express()
 const server = createServer(app)
 const io = new Server(server, {
   cors: {
-    origin: process.env.NODE_ENV === 'production' ? false : ["http://localhost:5173", "http://localhost:5174"],
-    methods: ["GET", "POST"],
+    origin: process.env.NODE_ENV === 'production' 
+          ? ["https://wetalk-58940d14d1e3.herokuapp.com", "http://localhost:3000"] 
+          : ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],    methods: ["GET", "POST"],
     credentials: true
   }
 })
 
-const allowedOrigins = new Set([
+const allowedOrigins = [
   'http://localhost:5173',
-  'http://localhost:5174'
-])
+  'http://localhost:5174',
+  'http://localhost:3000',
+  'https://wetalk-58940d14d1e3.herokuapp.com'
+]
 
 app.use(
-  cors({
+cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true)
       
-      const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174']
       if (allowedOrigins.includes(origin)) return callback(null, true)
       
       return callback(new Error(`CORS: origin not allowed: ${origin}`))
@@ -48,8 +50,7 @@ app.use(
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
-  })
-)
+  }))
 
 app.options(/.*/, cors())
 
@@ -135,27 +136,35 @@ app.use('/api/message', authMiddleware, messageController)
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const clientBuildPath = path.join(__dirname, '../client/dist');
+const clientBuildPath = path.join(process.cwd(), 'client', 'dist');
 
 app.use(express.static(clientBuildPath));
 
-// If a static asset is missing, don't turn it into a JSON 500.
-// Let the browser receive a normal 404 for `/assets/*` (and other dist files).
-app.use((err, req, res, next) => {
-  if (err && (req.path?.startsWith('/assets/') || req.path?.includes('.'))) {
-    return res.sendStatus(404)
-  }
-  next(err)
-})
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'API endpoint not found' });
+});
 
-// Express 5 (path-to-regexp v6) no longer accepts a bare "*" route.
-// Serve the SPA for non-API GET requests.
-app.get(/^(?!\/api\/)(?!\/assets\/).*/, (req, res, next) => {
-  // If the client wasn't built/deployed, fall through to the error handler.
-  res.sendFile(path.join(clientBuildPath, 'index.html'), (err) => {
-    if (err) return next(err)
-  })
-})
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(clientBuildPath, 'index.html'));
+});
+
+// // If a static asset is missing, don't turn it into a JSON 500.
+// // Let the browser receive a normal 404 for `/assets/*` (and other dist files).
+// app.use((err, req, res, next) => {
+//   if (err && (req.path?.startsWith('/assets/') || req.path?.includes('.'))) {
+//     return res.sendStatus(404)
+//   }
+//   next(err)
+// })
+
+// // Express 5 (path-to-regexp v6) no longer accepts a bare "*" route.
+// // Serve the SPA for non-API GET requests.
+// app.get(/^(?!\/api\/)(?!\/assets\/).*/, (req, res, next) => {
+//   // If the client wasn't built/deployed, fall through to the error handler.
+//   res.sendFile(path.join(clientBuildPath, 'index.html'), (err) => {
+//     if (err) return next(err)
+//   })
+// })
 
 app.use(errorHandler)
 
