@@ -1,0 +1,2 @@
+WeTalk is a modern real-time chat app that makes it easy to connect with friends or teams in a clean, focused workspace. It supports secure authentication, smooth one‑to‑one messaging, and group conversations with member management—so you can start chatting quickly and stay organized as your community grows. With a fast, responsive interface and reliable messaging powered by a dedicated server, WeTalk is built to keep your conversations flowing anytime, anywhere.
+

@@ -17,7 +17,18 @@ const register = async (email, password, name) => {
     }
   });
 
-  return newUser
+  const token = jwt.sign(
+    {
+      userId: newUser.id,
+      email: newUser.email
+    },
+    config.JWT_SECRET
+  );
+
+  return {
+    token: token,
+    user: newUser
+  }
 }
 
 const login = async (email, password) => {

@@ -151,12 +151,15 @@ export default function ChatContactInfoDock({
           {errorMessage ? <div className="contact-dock-error">{errorMessage}</div> : null}
         </div>
 
+        {/* Contact actions (hidden for now) */}
+        {/*
         <div className="contact-dock-actions" role="group" aria-label="Contact actions">
           <ActionButton icon={videoIcon} label="Video" />
           <ActionButton icon={phoneIcon} label="Call" />
           <ActionButton icon={optionsIcon} label="Options" />
           <ActionButton icon={searchIcon} label="Search" />
         </div>
+        */}
 
         {typeof membersCount === 'number' ? (
           <section className="contact-dock-section">

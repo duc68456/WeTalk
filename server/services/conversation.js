@@ -179,110 +179,103 @@ const getOrCreateDirectConversation = async (requesterId, partnerId) => {
     throw new Error('USER_NOT_FOUND')
   }
 
-  // Concurrency-safe get-or-create.
-  // Even if the client (or browser) fires multiple requests quickly, this should resolve to one canonical DIRECT conversation.
-  const result = await prisma.$transaction(async (tx) => {
-    const existing = await tx.conversation.findFirst({
-      where: {
-        type: 'DIRECT',
-        deletedAt: null,
-        AND: [
-          { members: { some: { userId: requesterId } } },
-          { members: { some: { userId: partnerId } } }
-        ]
-      },
-      select: {
-        id: true,
-        type: true,
-        name: true,
-        avatarUrl: true,
-        createdAt: true,
-        members: {
-          where: {
-            userId: { not: requesterId }
-          },
-          take: 4,
-          select: {
-            user: {
-              select: { id: true, name: true, avatarUrl: true, lastActiveAt: true }
-            }
-          }
+  const a = String(requesterId)
+  const b = String(partnerId)
+  const conversationKey = a < b ? `${a}:${b}` : `${b}:${a}`
+
+  // Fast path: return the existing conversation if present.
+  const existing = await prisma.conversation.findFirst({
+    where: {
+      type: 'DIRECT',
+      deletedAt: null,
+      conversationKey
+    },
+    select: {
+      id: true,
+      type: true,
+      name: true,
+      avatarUrl: true,
+      createdAt: true,
+      members: {
+        where: {
+          userId: { not: requesterId }
         },
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          include: {
-            sender: {
-              select: { name: true }
-            }
+        take: 4,
+        select: {
+          user: {
+            select: { id: true, name: true, avatarUrl: true, lastActiveAt: true }
           }
         }
-      }
-    })
-
-    if (existing) return { conversation: existing, isAlreadyExisted: true }
-
-    // Create new DIRECT conversation.
-    await tx.conversation.create({
-      data: {
-        type: 'DIRECT',
-        members: {
-          create: [
-            { user: { connect: { id: requesterId } }, role: 'PEER' },
-            { user: { connect: { id: partnerId } }, role: 'PEER' }
-          ]
-        }
-      }
-    })
-
-    // Read again to return the canonical row (handles rare cases where multiple creates slip through under weak isolation).
-    const canonical = await tx.conversation.findFirst({
-      where: {
-        type: 'DIRECT',
-        deletedAt: null,
-        AND: [
-          { members: { some: { userId: requesterId } } },
-          { members: { some: { userId: partnerId } } }
-        ]
       },
-      orderBy: { createdAt: 'asc' },
-      select: {
-        id: true,
-        type: true,
-        name: true,
-        avatarUrl: true,
-        createdAt: true,
-        members: {
-          where: {
-            userId: { not: requesterId }
-          },
-          take: 4,
-          select: {
-            user: {
-              select: { id: true, name: true, avatarUrl: true, lastActiveAt: true }
-            }
-          }
-        },
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          include: {
-            sender: {
-              select: { name: true }
-            }
+      messages: {
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        include: {
+          sender: {
+            select: { name: true }
           }
         }
       }
-    })
-
-    if (!canonical) {
-      throw new Error('FAILED_TO_CREATE_DIRECT')
     }
-
-    return { conversation: canonical, isAlreadyExisted: false }
   })
 
-  return result
+  if (existing) return { conversation: existing, isAlreadyExisted: true }
+
+  await prisma.conversation.upsert({
+    where: { conversationKey },
+    create: {
+      type: 'DIRECT',
+      conversationKey,
+      members: {
+        create: [
+          { user: { connect: { id: requesterId } }, role: 'PEER' },
+          { user: { connect: { id: partnerId } }, role: 'PEER' }
+        ]
+      }
+    },
+    update: {}
+  })
+
+  const canonical = await prisma.conversation.findFirst({
+    where: {
+      type: 'DIRECT',
+      deletedAt: null,
+      conversationKey
+    },
+    select: {
+      id: true,
+      type: true,
+      name: true,
+      avatarUrl: true,
+      createdAt: true,
+      members: {
+        where: {
+          userId: { not: requesterId }
+        },
+        take: 4,
+        select: {
+          user: {
+            select: { id: true, name: true, avatarUrl: true, lastActiveAt: true }
+          }
+        }
+      },
+      messages: {
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        include: {
+          sender: {
+            select: { name: true }
+          }
+        }
+      }
+    }
+  })
+
+  if (!canonical) {
+    throw new Error('FAILED_TO_CREATE_DIRECT')
+  }
+
+  return { conversation: canonical, isAlreadyExisted: false }
 }
 
 const deleteConversation = async (conversationId, requesterId) => {

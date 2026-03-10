@@ -22,15 +22,6 @@ export default function ChatSidebar({
 
         <nav className="chat-sidebar-nav" aria-label="Navigation">
           <button
-            className={`chat-sidebar-btn ${activeItem === 'home' ? 'chat-sidebar-btn--active' : ''}`}
-            type="button"
-            aria-label="Home"
-            onClick={onOpenHome}
-          >
-            <img src={navHomeIcon} alt="" />
-          </button>
-
-          <button
             className={`chat-sidebar-btn ${activeItem === 'messages' ? 'chat-sidebar-btn--active' : ''}`}
             type="button"
             aria-label="Messages"
@@ -39,6 +30,17 @@ export default function ChatSidebar({
             <img src={navMessageIcon} alt="" />
           </button>
 
+          <button
+            className={`chat-sidebar-btn ${activeItem === 'home' ? 'chat-sidebar-btn--active' : ''}`}
+            type="button"
+            aria-label="Home"
+            onClick={onOpenHome}
+          >
+            <img src={navHomeIcon} alt="" />
+          </button>
+
+          {/* Secondary nav (hidden for now) */}
+          {/*
           <button className="chat-sidebar-btn" type="button" aria-label="Contacts">
             <img src={navUserIcon} alt="" />
           </button>
@@ -46,6 +48,7 @@ export default function ChatSidebar({
           <button className="chat-sidebar-btn" type="button" aria-label="Settings">
             <img src={navSettingsIcon} alt="" />
           </button>
+          */}
         </nav>
       </div>
 

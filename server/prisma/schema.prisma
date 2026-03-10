@@ -44,6 +44,8 @@ enum ConversationType {
 model Conversation {
   id String @id @default(uuid())
   type ConversationType @default(DIRECT)
+  
+  conversationKey String? @unique
 
   name      String?
   avatarUrl String?

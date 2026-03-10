@@ -54,8 +54,8 @@ export default function SignUp({ onNavigateLogin, onSignUpSuccess }) {
         name: fullName
       })
 
-      const user = res.data.user
-      const token = res.data.token
+      const user = res?.data?.user
+      const token = res?.data?.token
 
       onSignUpSuccess(user, token)
     }

@@ -25,10 +25,13 @@ router.post('/register', async (req, res, next) => {
     const { email, password, name } = validatedData;
 
     // const newUser = await userService.createUser(email, password, name)
-    const newUser = await authService.register(email, password, name)
+    const result = await authService.register(email, password, name)
+
+    const newUser = result.user
 
     res.status(201).json({
       message: "Registered Succesfully",
+      token: result.token,
       user: {
         id: newUser.id,
         email: newUser.email,

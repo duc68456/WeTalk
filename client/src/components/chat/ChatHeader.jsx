@@ -47,12 +47,15 @@ export default function ChatHeader({
           <span>AI Summary</span>
         </button> */}
 
+        {/* Call actions (hidden for now) */}
+        {/*
         <button className="chat-header-icon" type="button" aria-label="Video call">
           <img src={videoIcon} alt="" />
         </button>
         <button className="chat-header-icon" type="button" aria-label="Audio call">
           <img src={phoneIcon} alt="" />
         </button>
+        */}
         <button className="chat-header-icon chat-header-icon--ghost" type="button" aria-label="More" onClick={onMore}>
           <img src={moreIcon} alt="" />
         </button>
