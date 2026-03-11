@@ -65,7 +65,6 @@ const searchUser = async (email) => {
 const searchUserForRequester = async (email, requesterUserId) => {
   const user = await searchUser(email)
 
-  // Zalo-style: searching yourself is not useful for "add friend" flows
   if (requesterUserId && user.id === requesterUserId) {
     throw new Error('CANNOT_SEARCH_SELF')
   }

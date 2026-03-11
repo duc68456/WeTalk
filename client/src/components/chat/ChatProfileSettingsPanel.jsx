@@ -46,7 +46,6 @@ export default function ChatProfileSettingsPanel({ user, token, onUserUpdated })
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Basic client-side guard
     if (!file.type.startsWith('image/')) {
       setSubmitError('Please choose an image file')
       return
@@ -60,7 +59,6 @@ export default function ChatProfileSettingsPanel({ user, token, onUserUpdated })
     setAvatarFile(file)
     setAvatarPreviewUrl(url)
 
-    // Immediately upload the avatar to backend
     uploadAvatar(file)
   }
 
@@ -79,7 +77,7 @@ export default function ChatProfileSettingsPanel({ user, token, onUserUpdated })
       //   }
       // })
       const api = createApiClient(token)
-  const res = await api.patch('/user/update-avatar', formData)
+      const res = await api.patch('/user/update-avatar', formData)
 
       const updatedUser = res?.data?.user
       if (updatedUser) {

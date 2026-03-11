@@ -3,6 +3,7 @@ import express from 'express'
 import logger from '../utils/logger.js'
 
 import messageService from '../services/message.js'
+import { uploadMessageImage } from '../config/cloudinary.js'
 
 const router = express.Router()
 
@@ -35,6 +36,45 @@ router.post('/', async (req, res, next) => {
     })
   }
   catch (error) {
+    logger.error(error)
+    next(error)
+  }
+})
+
+// Send an image message (multipart/form-data with field: image)
+router.post('/image', uploadMessageImage.single('image'), async (req, res, next) => {
+  try {
+    const { conversationId } = req.body
+    const senderId = req.user.userId
+
+    if (!conversationId) {
+      return res.status(400).json({ message: 'conversationId is required' })
+    }
+    if (!req.file) {
+      return res.status(400).json({ message: 'There is no image file' })
+    }
+
+    const io = req.app.get('io')
+    const fileUrl = req.file.path
+
+    const newMessage = await messageService.postImageToConversation(senderId, conversationId, fileUrl)
+
+    io.to(conversationId).emit('new_message', newMessage)
+
+    try {
+      const members = await messageService.getConversationMemberUserIds(conversationId)
+      for (const uid of members) {
+        io.to(`user:${uid}`).emit('new_message', newMessage)
+      }
+    } catch (e) {
+      logger.error('Failed to emit new_message to user rooms', e)
+    }
+
+    return res.status(201).json({
+      message: 'Image message created successfully',
+      newMessage
+    })
+  } catch (error) {
     logger.error(error)
     next(error)
   }

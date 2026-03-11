@@ -48,6 +48,35 @@
   padding: 12px 16px;
 }
 
+/* Image bubbles shouldn't look like text bubbles (no thick blue padding/shadow). */
+.chat-bubble--media {
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.chat-bubble--media img {
+  display: block;
+  border-radius: 16px;
+}
+
+.chat-bubble--media button.chat-bubble-mediaBtn {
+button.chat-bubble-mediaBtn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: inline-block;
+  line-height: 0;
+}
+button.chat-bubble-mediaBtn:focus {
+  outline: none;
+}
+  all: unset;
+  cursor: zoom-in;
+  display: inline-block;
+}
+
 .chat-msg-time {
   padding: 0 4px;
   font-size: 12px;

@@ -308,7 +308,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
               if (c.id !== convId) return c
               return {
                 ...c,
-                preview: mapped.text?.trim() ? mapped.text : 'New message',
+                preview: mapped.text?.trim() ? mapped.text : (newMessage?.messageType === 'IMAGE' ? '📷 Image' : 'New message'),
                 time: formatRelativeTime(newMessage?.createdAt),
                 sortTs: new Date(newMessage?.createdAt || 0).getTime() || c.sortTs
               }
@@ -696,6 +696,8 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
       initials,
       avatarUrl,
       text: m.content || '',
+      messageType: m.messageType || 'TEXT',
+      fileUrl: m.fileUrl || null,
       createdAt: m.createdAt,
       time: formatTime(m.createdAt)
     }
@@ -711,8 +713,6 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
   }
 
   const addTimeGuards = (msgList) => {
-    // Inserts compact time separators when day changes.
-    // We treat items with { kind: 'guard' } specially in the UI.
     const out = []
     let lastDayKey = null
     for (const m of msgList) {
@@ -1065,6 +1065,106 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
     }
   }
 
+  const onSendImage = async (file) => {
+    const tempId = `upload:${Date.now()}:${Math.random().toString(16).slice(2)}`
+    const localPreviewUrl = URL.createObjectURL(file)
+
+    try {
+      if (!token || !file) return
+      if (!file.type?.startsWith('image/')) return
+
+      // Optimistic UI: show a temporary uploading bubble immediately.
+      const tempMsg = {
+        id: tempId,
+        from: 'me',
+        author: 'You',
+        initials: initialsFromName(user?.name || 'You'),
+        avatarUrl:
+          user?.avatarUrl ||
+          'https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg',
+        text: '',
+        messageType: 'IMAGE',
+        fileUrl: localPreviewUrl,
+        createdAt: new Date().toISOString(),
+        time: formatTime(new Date()),
+        isUploading: true
+      }
+
+      setMessages((prev) => [...prev, tempMsg])
+
+      const api = createApiClient(token)
+
+      // If the user is in a draft DIRECT thread, create/get the conversation first.
+      let conversationIdToSend = activeConversationId
+      let createdConversation = null
+
+      if (!conversationIdToSend && draftDirectPartner?.id) {
+        createdConversation = await startDirectConversationWithPartner(draftDirectPartner.id)
+        if (!createdConversation?.id) throw new Error('Failed to start chat')
+
+        const mappedConv = mapBackendConversation({ conversation: createdConversation })
+        if (mappedConv) {
+          setConversations((prev) => {
+            const next = [mappedConv, ...prev.filter((c) => c.id !== mappedConv.id)]
+            return next.slice().sort((a, b) => (b.sortTs || 0) - (a.sortTs || 0))
+          })
+        }
+
+        conversationIdToSend = createdConversation.id
+        setActiveConversationId(createdConversation.id)
+        setDraftDirectPartner(null)
+        setSearch('')
+        setSearchUserState({ isLoading: false, error: '', user: null })
+      }
+
+      if (!conversationIdToSend) return
+
+      const formData = new FormData()
+      formData.append('conversationId', conversationIdToSend)
+      formData.append('image', file)
+
+      const res = await api.post('/message/image', formData)
+      const created = res?.data?.newMessage
+      const mapped = mapBackendMessage(created)
+      if (mapped) {
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? mapped : m)))
+      } else {
+        // If mapping failed for some reason, remove the placeholder.
+        setMessages((prev) => prev.filter((m) => m.id !== tempId))
+      }
+
+      const ts = new Date(created?.createdAt || Date.now()).getTime() || Date.now()
+      setConversations((prev) =>
+        prev
+          .map((c) => {
+            if (c.id !== conversationIdToSend) return c
+            return {
+              ...c,
+              preview: '📷 Image',
+              time: formatRelativeTime(created?.createdAt || ts),
+              sortTs: ts
+            }
+          })
+          .slice()
+          .sort((a, b) => (b.sortTs || 0) - (a.sortTs || 0))
+      )
+    } catch (err) {
+      console.error('Failed to send image', err)
+
+      // Mark placeholder failed so the user has feedback.
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempId ? { ...m, isUploading: false, isFailed: true } : m))
+      )
+    } finally {
+      // Release object URL
+      try {
+        URL.revokeObjectURL(localPreviewUrl)
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 980px)')
     const update = () => {
@@ -1367,6 +1467,7 @@ export default function Chat({ onLogout, user, token, onUserUpdated }) {
                   value={message}
                   onChange={setMessage}
                   onSend={onSend}
+                  onSendImage={onSendImage}
                   onTypingStart={() => {
                     if (!socket || !activeConversationId) return
                     socket.emit('typing:start', { conversationId: activeConversationId, name: user?.name || '' })

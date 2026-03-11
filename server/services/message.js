@@ -54,6 +54,42 @@ const postMessageToConversation = async (senderId, conversationId, content) => {
   */
 }
 
+const postImageToConversation = async (senderId, conversationId, fileUrl) => {
+  const isMember = await prisma.member.findFirst({
+    where: {
+      userId: senderId,
+      conversationId: conversationId,
+      status: 'ACTIVE'
+    }
+  })
+
+  if (!isMember) {
+    throw new Error('NOT_ALLOWED')
+  }
+
+  const newMessage = await prisma.message.create({
+    data: {
+      conversationId,
+      senderId,
+      content: null,
+      messageType: 'IMAGE',
+      fileUrl,
+      isDeleted: false
+    },
+    include: {
+      sender: {
+        select: {
+          id: true,
+          name: true,
+          avatarUrl: true
+        }
+      }
+    }
+  })
+
+  return newMessage
+}
+
 const getMessagesByConversationId = async (userId, conversationId, page, limit) => {
   const isMember = await prisma.member.findFirst({
     where: {
@@ -122,6 +158,7 @@ const getMessagesByConversationId = async (userId, conversationId, page, limit) 
 
 export default {
   postMessageToConversation,
+  postImageToConversation,
   getConversationMemberUserIds,
   getMessagesByConversationId
 }

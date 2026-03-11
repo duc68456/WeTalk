@@ -18,7 +18,6 @@ const storage = new CloudinaryStorage({
       folder: 'chat_app_avatars',
       public_id: `user_avatar_${userId}`,
       allowed_formats: ['jpeg', 'png', 'jpg'], 
-      // transformation: [{ width: 500, height: 500, crop: 'fill', gravity: 'face' }],
       transformation: [{ width: 500, height: 500, crop: 'fill' }],
       overwrite: true,
       invalidate: true 
@@ -46,6 +45,29 @@ const conversationAvatarStorage = new CloudinaryStorage({
 
 const uploadConversationAvatar = multer({ storage: conversationAvatarStorage });
 
-export { uploadConversationAvatar };
+// Message image upload (chat attachments)
+const messageImageStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    const conversationId = req.body?.conversationId || req.params?.conversationId || 'unknown_conversation'
+    const senderId = req.user?.userId || 'unknown_sender'
+
+    return {
+      folder: 'chat_app_messages',
+      // Let Cloudinary generate a unique public_id to avoid collisions.
+      resource_type: 'image',
+      allowed_formats: ['jpeg', 'png', 'jpg', 'webp', 'gif'],
+      transformation: [{ width: 1600, height: 1600, crop: 'limit' }],
+      context: {
+        conversationId,
+        senderId
+      }
+    }
+  }
+})
+
+const uploadMessageImage = multer({ storage: messageImageStorage })
+
+export { uploadConversationAvatar, uploadMessageImage };
 
 export default uploadCloud;

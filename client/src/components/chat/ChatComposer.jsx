@@ -6,11 +6,12 @@ import attachIcon from '../../assets/icons/chat/attach.svg'
 import emojiIcon from '../../assets/icons/chat/emoji.svg'
 import sendIcon from '../../assets/icons/chat/send.svg'
 
-export default function ChatComposer({ value, onChange, onSend, onTypingStart, onTypingStop }) {
+export default function ChatComposer({ value, onChange, onSend, onSendImage, onTypingStart, onTypingStop }) {
   const send = useCallback(() => onSend?.(), [onSend])
   const hasMessage = Boolean(value?.trim())
   const typingTimeoutRef = useRef(null)
   const isTypingRef = useRef(false)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     return () => {
@@ -21,9 +22,28 @@ export default function ChatComposer({ value, onChange, onSend, onTypingStart, o
   return (
     <div className="chat-composer">
       <div className="chat-composer-inputWrap">
-        <button className="chat-composer-icon" type="button" aria-label="Attach">
+        <button
+          className="chat-composer-icon"
+          type="button"
+          aria-label="Attach"
+          onClick={() => fileInputRef.current?.click()}
+        >
           <img src={attachIcon} alt="" />
         </button>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (!file) return
+            onSendImage?.(file)
+            // allow selecting the same file again
+            e.target.value = ''
+          }}
+        />
 
         <input
           className="chat-composer-input"
